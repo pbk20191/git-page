@@ -3,7 +3,10 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"homepage": "https://pbk20191.github.io/git-page",
 	"scripts": {
+		"predeploy": "npm run build",
+		"deploy": "gh-pages -d build",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
@@ -17,6 +20,7 @@
 		"@sveltejs/adapter-static": "^3.0.8",
 		"@sveltejs/kit": "^2.16.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
+		"gh-pages": "^6.3.0",
 		"svelte": "^5.25.0",
 		"svelte-check": "^4.0.0",
 		"typescript": "^5.0.0",
