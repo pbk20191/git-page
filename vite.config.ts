@@ -3,5 +3,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()]
+	plugins: [tailwindcss(), sveltekit()],
+	optimizeDeps: {
+		exclude: [
+			 "../dist/heic-enc.js",  "../dist/heic-dec.js",
+		]
+	}
 });

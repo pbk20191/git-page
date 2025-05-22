@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Header from './Header.svelte';
 	import '../app.css';
-	
+	import '$lib/components/service.client.ts';
 	let { children } = $props();
 </script>
 
