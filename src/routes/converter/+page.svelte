@@ -3,16 +3,26 @@
     <meta name="description" content="Converter for heif" />
 </svelte:head>
 <script lang="ts">
-
+	import { onDestroy } from 'svelte';
     import { pool as workerPool } from "workerpool"
     import {type EncodeImageResult, type DecodeImageResult} from "elheif";
     import HEICWorker from '$workers/heic?worker&url'
 
     const pool = workerPool(HEICWorker, { workerOpts: { type: 'module' } })
+    onDestroy(() => {
+        pool.terminate(true)
+        .catch((e) => {
+            console.error("failure",e)
+        })
+    })
     let file: File | null = null
     let downloadUrl: string | null = null
     let previewCanvas:HTMLCanvasElement
-
+    onDestroy(() => {
+        if (downloadUrl) {
+            URL.revokeObjectURL(downloadUrl)
+        }
+    })
     function base64ToArrayBuffer(base64: string) {
         var binaryString = atob(base64);
         var bytes = new Uint8Array(binaryString.length);
