@@ -24,15 +24,6 @@ sw.addEventListener("activate", (event) => event.waitUntil(sw.clients.claim()));
 sw.addEventListener("message", (ev) => {
     if (!ev.data) {
         return;
-    } else if (ev.data.type === "deregister") {
-        sw.registration
-            .unregister()
-            .then(() => {
-                return sw.clients.matchAll();
-            })
-            .then(clients => {
-                clients.forEach((client) => (client as WindowClient).navigate(client.url));
-            });
     } else if (ev.data.type === "coepCredentialless") {
         // coepCredentialless = ev.data.value;
     }

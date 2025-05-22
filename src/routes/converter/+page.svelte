@@ -2,85 +2,44 @@
     <title>About</title>
     <meta name="description" content="Converter for heif" />
 </svelte:head>
-
 <script lang="ts">
+
     import { pool as workerPool } from "workerpool"
-    // import type { EncodeImageResult, DecodeImageResult } from "elheif"
-    import HEICWorker from '$lib/components/heic.worker?worker&url'
+    import {type EncodeImageResult, type DecodeImageResult} from "elheif";
+    import HEICWorker from '$workers/heic?worker&url'
 
-    // const pool = workerPool(HEICWorker, { workerOpts: { type: 'module' } })
-    
-import { avif, heic } from "icodec";
-
-import { worker } from 'workerpool'
-// importScripts('workerpool.js');
-// importScripts('https://cdn.jsdelivr.net/gh/hpp2334/elheif@main/pkg/elheif.js');
-//
-import AVIFEncWASM from "icodec/avif-enc.wasm?url";
-import AvifDecWASM from "icodec/avif-dec.wasm?url";
-import HeicEncWASM from "icodec/heic-enc.wasm?url";
-import HeicDecWASM from "icodec/heic-dec.wasm?url";
-// var k = import("icodec/dist")
-// console.log("k", k)
-// console.log("p", p)
-// import AVIFEncjs from "icodec/avif-enc.js?url";
-// import AvifDecjs from "icodec/avif-dec.js?url";
-// import HeicEncjs from "icodec/heic-enc.js?url";
-// import HeicDecjs from "icodec/heic-dec.js?url";
-
-let initialized = false;
-async function initIfNeeded() {
-    if (!initialized) {
-        // elheif가 전역으로 등록되었을 것
-        await Promise.all(
-            [
-                // avif.loadDecoder(AvifDecWASM),
-                // avif.loadEncoder(AVIFEncWASM),
-                heic.loadDecoder(HeicDecWASM),
-                heic.loadEncoder(HeicEncWASM),
-            ]
-        )
-        initialized = true;
-    }
-}
-
-
+    const pool = workerPool(HEICWorker, { workerOpts: { type: 'module' } })
     let file: File | null = null
     let downloadUrl: string | null = null
-    let previewCanvas: HTMLCanvasElement
-    let previewState: 'original' | 'encoded' | null = null
+    let previewCanvas:HTMLCanvasElement
 
     function base64ToArrayBuffer(base64: string) {
-        const binary = atob(base64)
-        const bytes = new Uint8Array(binary.length)
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-        return bytes
+        var binaryString = atob(base64);
+        var bytes = new Uint8Array(binaryString.length);
+        for (var i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes;
     }
 
-
-    async function decodeHeif(buffer: BufferSource) {
-        await initIfNeeded()
-        return heic.decode(buffer)
-        // const result: ImageData = await pool.exec('jsDecodeImage', [buffer])
-        // return result
+    function loadHeicImage() {
+        const DATA =
+            "AAAAHGZ0eXBoZWljAAAAAG1pZjFoZWljbWlhZgAAApRtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAAA5waXRtAAAAAAABAAAANGlsb2MAAAAAREAAAgABAAAAAAK4AAEAAAAAAAAAMgACAAAAAALqAAEAAAAAAAAAIwAAADhpaW5mAAAAAAACAAAAFWluZmUCAAAAAAEAAGh2YzEAAAAAFWluZmUCAAAAAAIAAGh2YzEAAAAB02lwcnAAAAGsaXBjbwAAAHZodmNDAQNwAAAAAAAAAAAAHvAA/P34+AAADwMgAAEAGEABDAH//wNwAAADAJAAAAMAAAMAHroCQCEAAQAqQgEBA3AAAAMAkAAAAwAAAwAeoCCBBZbqrprm4CGgwIAAAAMAgAAAAwCEIgABAAZEAcFzwYkAAAAUaXNwZQAAAAAAAABAAAAAQAAAAChjbGFwAAAACgAAAAEAAAAKAAAAAf///8oAAAAC////ygAAAAIAAAAQcGl4aQAAAAADCAgIAAAAcWh2Y0MBBAgAAAAAAAAAAAAe8AD8/Pj4AAAPAyAAAQAXQAEMAf//BAgAAAMAn/gAAAMAAB66AkAhAAEAJkIBAQQIAAADAJ/4AAADAAAewIIEFluqumubAgAAAwACAAADAAIQIgABAAZEAcFzwYkAAAAUaXNwZQAAAAAAAABAAAAAQAAAAChjbGFwAAAACgAAAAEAAAAKAAAAAf///8oAAAAC////ygAAAAIAAAAOcGl4aQAAAAABCAAAACdhdXhDAAAAAHVybjptcGVnOmhldmM6MjAxNTphdXhpZDoxAAAAAB9pcG1hAAAAAAAAAAIAAQSBAoMEAAIFhQaHCIkAAAAaaXJlZgAAAAAAAAAOYXV4bAACAAEAAQAAAF1tZGF0AAAALigBrxMhYmNA9Sci//75Mn/pHyf9QdlhZ3K6wVvy+sD2ZJvA86qRnoCHaacwFXgAAAAfKAGuJkJKJOfXDbP+G8cXYVVzU7JsIGJEKRKAY/X0rg==";
+        return base64ToArrayBuffer(DATA)
     }
 
     async function encodeToHeif(buffer: Uint8ClampedArray, width: number, height: number) {
-        await initIfNeeded()
-        return await heic.encode({
-            data: buffer,
-            width, height,  depth: 8,
-        })
-        
-        // const result: Uint8Array = await pool.exec('jsEncodeImage', [buffer, width, height])
-        // return result
+        const result: EncodeImageResult = await pool.exec('jsEncodeImage', [
+            buffer,
+            width,
+            height,
+        ])
+        return result
     }
 
-    async function drawImageDataOnCanvas(data: ImageData) {
-        previewCanvas.width = data.width
-        previewCanvas.height = data.height
-        const ctx = previewCanvas.getContext('2d')!
-        ctx.putImageData(data, 0, 0)
+    async function decodeHeif(buffer: Uint8Array) {
+        const result:DecodeImageResult = await pool.exec('jsDecodeImage', [buffer])
+        return result
     }
 
     async function handleFileChange(e: Event) {
@@ -93,46 +52,48 @@ async function initIfNeeded() {
         ctx.drawImage(bitmap, 0, 0)
         const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height)
 
-        // 원본 미리보기
-        await drawImageDataOnCanvas(imageData)
-        previewState = 'original'
-
-        const result = await encodeToHeif(
+        const result: EncodeImageResult = await encodeToHeif(
             imageData.data,
             imageData.width,
-            imageData.height
+            imageData.height,
         )
         console.log("received result", result)
-        const blob = new Blob([result], { type: 'image/heic' })
+        // result.data.buffer
+        const blob = new Blob([result.data], { type: 'image/heic' })
+        if (downloadUrl) {
+            URL.revokeObjectURL(downloadUrl)
+        }
         downloadUrl = URL.createObjectURL(blob)
-
-        // 디코딩해서 다시 표시
-        const redecoded = await decodeHeif(result)
-        // const img = redecoded.data[0]
-        await drawImageDataOnCanvas(redecoded)
-        previewState = 'encoded'
     }
-
     async function decodeSampleImage() {
-        // const buffer = loadHeicImage()
-        // const result = await decodeHeif(buffer)
-        // const img = result.data[0]
-        // await drawImageDataOnCanvas(img.data, img.width, img.height)
-        // previewState = 'original'
+        // const response = await fetch("/example.heic")
+        // const buffer = new Uint8Array(await response.arrayBuffer())
+        
+        const buffer = loadHeicImage()
+        console.log("window input decodeSampleImage",buffer)
+        const result: DecodeImageResult = await decodeHeif(buffer)
+        console.log("decodeSampleImage" , result)
+        const ctx = previewCanvas.getContext('2d')!
+        // const bitmap = heif_module.decode(buffer, buffer.length, true)
+        previewCanvas.width = 10
+        previewCanvas.height = 10
+        const imageData = new ImageData(new Uint8ClampedArray(result.data[0].data), 10, 10)
+        ctx.putImageData(imageData, 0, 0)
+        const encodedData = await encodeToHeif(imageData.data, imageData.width, imageData.height)
+        const blob = new Blob([encodedData.data], { type: 'image/heic' })
+        if (downloadUrl) {
+            URL.revokeObjectURL(downloadUrl)
+        }
+        downloadUrl = URL.createObjectURL(blob)
     }
 </script>
 
 <div class="text-column">
-    <h1>HEIC 변환기</h1>
+    <h1>About this app</h1>
     <input type="file" accept="image/*" on:change={handleFileChange} />
-    <button on:click={decodeSampleImage}>샘플 HEIC 디코딩</button>
-
+    <button on:click={decodeSampleImage}>샘플 HEIC 디코딩 보기</button>
+    <br />
     <canvas bind:this={previewCanvas} style="border: 1px solid #ccc; margin-top: 1rem;" />
-
-    {#if previewState}
-        <p>현재 상태: {previewState === 'original' ? '원본 이미지' : '변환된 HEIC 결과'}</p>
-    {/if}
-
     {#if downloadUrl}
         <p><a href={downloadUrl} download="converted.heic">Download HEIC</a></p>
     {/if}
