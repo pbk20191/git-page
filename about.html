@@ -5,36 +5,41 @@
 		<link rel="icon" href="./favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		
-		<link rel="modulepreload" href="./_app/immutable/entry/start.mkTWfRRu.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/sSoJ5wxB.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/BKG1PcXe.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/BXodt0ID.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/Bu7o-lsP.js">
-		<link rel="modulepreload" href="./_app/immutable/entry/app.CEnPQFQP.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/DLA2W3yK.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/djWQNf30.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/Be5_fVtt.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/CqpRQVRZ.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/CZem28TM.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/FfnJmYVU.js">
-		<link rel="modulepreload" href="./_app/immutable/chunks/C1g6NAQw.js">
+		<link rel="modulepreload" href="./_app/immutable/entry/start.NNZI7xkh.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/C5g30RCZ.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/CZnZ5_Fq.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/1M1LbR8j.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/BcCn_0QE.js">
+		<link rel="modulepreload" href="./_app/immutable/entry/app.DlJcgx0-.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/DWzxo43A.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/DADB9M84.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/BEr6FrAa.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/DLgU1itV.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/BWbuDoMX.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/CegaQO-6.js">
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">
 			<script>
 				{
-					__sveltekit_17yuzn4 = {
+					__sveltekit_1b6mxtc = {
 						base: new URL(".", location).pathname.slice(0, -1)
 					};
 
 					const element = document.currentScript.parentElement;
 
 					Promise.all([
-						import("./_app/immutable/entry/start.mkTWfRRu.js"),
-						import("./_app/immutable/entry/app.CEnPQFQP.js")
+						import("./_app/immutable/entry/start.NNZI7xkh.js"),
+						import("./_app/immutable/entry/app.DlJcgx0-.js")
 					]).then(([kit, app]) => {
 						kit.start(app, element);
 					});
+
+					if ('serviceWorker' in navigator) {
+						addEventListener('load', function () {
+							navigator.serviceWorker.register('./service-worker.js');
+						});
+					}
 				}
 			</script>
 		</div>
