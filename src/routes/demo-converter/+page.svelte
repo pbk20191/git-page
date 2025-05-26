@@ -8,21 +8,25 @@
     import HEICWorker from '$workers/heic?worker&url'
     import type { EncodingOption } from 'elheif';
     import type { MainModule }  from 'elheif';
+    let useDefaultOption = true;
+    let quality = 80;
+    let lossless = false;
+    let sharpYUV = false;
 
+    function getEncodingOptions(): EncodingOption | undefined {
+        if (useDefaultOption) return undefined;
+        return {
+            quality,
+            lossless,
+            sharpYUV
+        };
+    }
     const pool = workerPool(HEICWorker, { workerOpts: { type: 'module' } })
     onDestroy(() => {
         pool.terminate(true)
         .catch((e) => {
             console.error("failure",e)
         })
-    })
-    let file: File | null = null
-    let downloadUrl: string | null = null
-    let previewCanvas:HTMLCanvasElement
-    onDestroy(() => {
-        if (downloadUrl) {
-            URL.revokeObjectURL(downloadUrl)
-        }
     })
 
     async function encodeToHeif(data: ImageData[], options?: EncodingOption) {
@@ -59,7 +63,7 @@
             ctx.drawImage(bitmap, 0, 0);
             const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
 
-            const result = await encodeToHeif([imageData]);
+            const result = await encodeToHeif([imageData], getEncodingOptions());
             if (result.error) {
                 console.error(`Error encoding ${file.name}`, result.error);
                 continue;
@@ -77,7 +81,28 @@
 </script>
 
 <div class="text-column">
-    <h1>About this app</h1>
+<label>
+  <input type="checkbox" bind:checked={useDefaultOption} />
+  기본 옵션 사용
+</label>
+
+{#if !useDefaultOption}
+  <div class="encoding-options">
+    <label>
+      Quality:
+      <input type="range" min="0" max="100" bind:value={quality} />
+      <span>{quality}</span>
+    </label>
+    <label>
+      <input type="checkbox" bind:checked={lossless} />
+      Lossless
+    </label>
+    <!-- <label>
+      <input type="checkbox" bind:checked={sharpYUV} />
+      SharpYUV
+    </label> -->
+  </div>
+{/if}
     <!-- <input type="file" accept="image/*" on:change={handleFileChange} /> -->
     <!-- <button on:click={decodeSampleImage}>샘플 HEIC 디코딩 보기</button> -->
     <br />
