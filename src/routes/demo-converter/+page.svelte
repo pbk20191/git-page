@@ -102,10 +102,10 @@
       <input type="checkbox" bind:checked={lossless} />
       Lossless
     </label>
-    <!-- <label>
+    <label>
       <input type="checkbox" bind:checked={sharpYUV} />
       SharpYUV
-    </label> -->
+    </label>
   </div>
 {/if}
     <!-- <input type="file" accept="image/*" on:change={handleFileChange} /> -->
