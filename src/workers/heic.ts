@@ -10,6 +10,10 @@ const sw = self as unknown as DedicatedWorkerGlobalScope;
 import * as elheif from 'elheif'
 import MainModuleFactory from 'elheif';
 import { worker } from 'workerpool'
+import { heic } from "icodec"
+
+// let block = heic.loadEncoder()
+
 // importScripts('workerpool.js');
 // importScripts('https://cdn.jsdelivr.net/gh/hpp2334/elheif@main/pkg/elheif.js');
 //
@@ -21,18 +25,25 @@ var moduleHolder = {
 let heifModule: Promise<elheif.MainModule> | null = null
 
 
-async function jsEncodeImages(images: ImageData[], option?: elheif.EncodingOption) {
+async function jsEncodeImages(file: File, option?: elheif.EncodingOption) {
     await ensureInitialized();
-    console.log("worker jsEncodeImage inputs", images, option);
-    const result = (moduleHolder as elheif.MainModule).jsEncodeImages(images, option);
-    // if (result.err) throw new Error(result.err);
+    // await block
+    let bitmap = await createImageBitmap(file)
+    let canvas = new OffscreenCanvas(
+        bitmap.width, bitmap.height
+    )
+    let context = canvas.getContext("2d")!
+    context.drawImage(bitmap, 0, 0)
+    bitmap.close()
+    let imageData = context.getImageData(0,0, canvas.width, canvas.height)
+    const result = (moduleHolder as elheif.MainModule).jsEncodeImages([imageData], option);
     console.log("worker jsEncodeImage send",result);
     return result;
 }
 
-async function jsDecodeImage(buffer: Uint8Array) {
+async function jsDecodeImage(file: File) {
     await ensureInitialized();
-    const result = (moduleHolder as elheif.MainModule).jsDecodeImage(buffer);
+    const result = (moduleHolder as elheif.MainModule).jsDecodeImage(await file.arrayBuffer());
     // if (result.err) throw new Error(result.err);
     console.log("worker jsDecodeImage send",result);
     return result;

@@ -29,14 +29,14 @@
         })
     })
 
-    async function encodeToHeif(data: ImageData[], options?: EncodingOption) {
+    async function encodeToHeif(data: File, options?: EncodingOption) {
         const result: ReturnType<MainModule["jsEncodeImages"]> = await pool.exec('jsEncodeImages', [
             data, options
         ])
         return result
     }
 
-    async function decodeHeif(buffer: Uint8Array) {
+    async function decodeHeif(buffer: File) {
         const result:ReturnType<MainModule["jsDecodeImage"]> = await pool.exec('jsDecodeImage', [buffer])
         return result
     }
@@ -58,14 +58,7 @@
                     zip.file(file.name, file);
                     return;
                 }
-
-                const bitmap = await createImageBitmap(file);
-                const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-                const ctx = canvas.getContext('2d')!;
-                ctx.drawImage(bitmap, 0, 0);
-                const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
-
-                const result = await encodeToHeif([imageData], getEncodingOptions());
+                const result = await encodeToHeif(file, getEncodingOptions());
                 if (result.error) {
                     console.error(`Error encoding ${file.name}`, result.error);
                     return;
