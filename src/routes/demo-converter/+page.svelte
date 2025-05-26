@@ -5,8 +5,9 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
     import { pool as workerPool } from "workerpool"
-    import {type EncodeImageResult, type DecodeImageResult} from "elheif";
     import HEICWorker from '$workers/heic?worker&url'
+    import type { EncodingOption } from 'elheif';
+    import type { MainModule }  from 'elheif';
 
     const pool = workerPool(HEICWorker, { workerOpts: { type: 'module' } })
     onDestroy(() => {
@@ -38,17 +39,15 @@
         return base64ToArrayBuffer(DATA)
     }
 
-    async function encodeToHeif(buffer: Uint8ClampedArray, width: number, height: number) {
-        const result: EncodeImageResult = await pool.exec('jsEncodeImage', [
-            buffer,
-            width,
-            height,
+    async function encodeToHeif(data: ImageData[], options?: EncodingOption) {
+        const result: ReturnType<MainModule["jsEncodeImages"]> = await pool.exec('jsEncodeImages', [
+            data, options
         ])
         return result
     }
 
     async function decodeHeif(buffer: Uint8Array) {
-        const result:DecodeImageResult = await pool.exec('jsDecodeImage', [buffer])
+        const result:ReturnType<MainModule["jsDecodeImage"]> = await pool.exec('jsDecodeImage', [buffer])
         return result
     }
 
@@ -62,14 +61,16 @@
         ctx.drawImage(bitmap, 0, 0)
         const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height)
 
-        const result: EncodeImageResult = await encodeToHeif(
-            imageData.data,
-            imageData.width,
-            imageData.height,
-        )
+        const result = await encodeToHeif([imageData], undefined)
+        if (result.error) {
+            console.error("Error encoding HEIC:", result.error)
+            throw result.error
+                // return
+        }
+        const data = result.data!
         console.log("received result", result)
         // result.data.buffer
-        const blob = new Blob([result.data], { type: 'image/heic' })
+        const blob = new Blob([data as ArrayBuffer], { type: 'image/heic' })
         if (downloadUrl) {
             URL.revokeObjectURL(downloadUrl)
         }
@@ -81,16 +82,21 @@
         
         const buffer = loadHeicImage()
         console.log("window input decodeSampleImage",buffer)
-        const result: DecodeImageResult = await decodeHeif(buffer)
+        const result = await decodeHeif(buffer)
+        if (result.error) {
+            console.error("Error decoding HEIC:", result.error)
+            throw result.error
+        }
+        const data = result.data!
         console.log("decodeSampleImage" , result)
         const ctx = previewCanvas.getContext('2d')!
         // const bitmap = heif_module.decode(buffer, buffer.length, true)
         previewCanvas.width = 10
         previewCanvas.height = 10
-        const imageData = new ImageData(new Uint8ClampedArray(result.data[0].data), 10, 10)
+        const imageData = data[0]
         ctx.putImageData(imageData, 0, 0)
-        const encodedData = await encodeToHeif(imageData.data, imageData.width, imageData.height)
-        const blob = new Blob([encodedData.data], { type: 'image/heic' })
+        const encodedData = await encodeToHeif(data, undefined)
+        const blob = new Blob([encodedData as ArrayBuffer], { type: 'image/heic' })
         if (downloadUrl) {
             URL.revokeObjectURL(downloadUrl)
         }

@@ -1,20 +1,20 @@
 <script lang="ts">
 	import Header from './Header.svelte';
 	import '../app.css';
-	import '$lib/components/service.client.ts';
+	// import '$lib/components/service.client.ts';
 	let { children } = $props();
 </script>
 
-<div class="min-h-screen flex flex-col">
+<div class="app">
 	<Header />
 
-	<main class="container mx-auto p-4 flex-1">
+	<main>
 		{@render children()}
 	</main>
 
-	<footer class="text-center p-4">
+	<footer>
 		<p>
-			visit <a class="text-primary-500 hover:text-primary-600" href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to learn about SvelteKit
+			visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to learn about SvelteKit
 		</p>
 	</footer>
 </div>
@@ -38,7 +38,6 @@
 	}
 
 	footer {
-
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
