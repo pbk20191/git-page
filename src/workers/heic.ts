@@ -13,16 +13,16 @@ import { worker } from 'workerpool'
 // importScripts('workerpool.js');
 // importScripts('https://cdn.jsdelivr.net/gh/hpp2334/elheif@main/pkg/elheif.js');
 //
-const moduleHolder = {
+var moduleHolder = {
 
     
 } as elheif.WasmModuleProp
 // console.log(elheif, MainModuleFactory)
-const heifModule = MainModuleFactory(moduleHolder)
+let heifModule: Promise<elheif.MainModule> | null = null
 
 
 async function jsEncodeImages(images: ImageData[], option?: elheif.EncodingOption) {
-    await heifModule;
+    await ensureInitialized();
     console.log("worker jsEncodeImage inputs", images, option);
     const result = (moduleHolder as elheif.MainModule).jsEncodeImages(images, option);
     // if (result.err) throw new Error(result.err);
@@ -31,11 +31,37 @@ async function jsEncodeImages(images: ImageData[], option?: elheif.EncodingOptio
 }
 
 async function jsDecodeImage(buffer: Uint8Array) {
-    await heifModule;
+    await ensureInitialized();
     const result = (moduleHolder as elheif.MainModule).jsDecodeImage(buffer);
     // if (result.err) throw new Error(result.err);
     console.log("worker jsDecodeImage send",result);
     return result;
 }
 
-worker({ jsEncodeImages, jsDecodeImage });
+async function ensureInitialized() {
+    if (!heifModule) {
+        heifModule = MainModuleFactory(moduleHolder);
+    }
+    await heifModule;
+}
+
+async function prune() {
+    heifModule = null;
+    moduleHolder = {};
+}
+
+// async function convertToHeif(
+//     file: File | Blob,
+//     option?: elheif.EncodingOption
+// ) {
+//     await heifModule;
+//     if (file.type == 'image/heic' || file.type == 'image/heif') {
+//         return file;
+//     }
+//     const decoder = new ImageDecoder({
+//         type: file.type
+//     })
+
+// }
+
+worker({ jsEncodeImages, jsDecodeImage, prune });

@@ -50,33 +50,38 @@
 
         const zip = new JSZip();
 
-        for (const file of files) {
-            if (file.type === 'image/heic' || file.type === 'image/heif') {
-                console.warn(`Skipping ${file.name} as it is already in HEIC format.`);
-                
-                zip.file(file.name, await file.arrayBuffer())
-                continue
+        const tasks = files.map(async (file) => {
+            try {
+                if (file.type === 'image/heic' || file.type === 'image/heif') {
+                    console.warn(`Skipping ${file.name} as it is already in HEIC format.`);
+                    // const buffer = await file.arrayBuffer();
+                    zip.file(file.name, file);
+                    return;
+                }
+
+                const bitmap = await createImageBitmap(file);
+                const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+                const ctx = canvas.getContext('2d')!;
+                ctx.drawImage(bitmap, 0, 0);
+                const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+
+                const result = await encodeToHeif([imageData], getEncodingOptions());
+                if (result.error) {
+                    console.error(`Error encoding ${file.name}`, result.error);
+                    return;
+                }
+                const outputName = file.name.replace(/\.[^/.]+$/, '') + '.heic';
+                zip.file(outputName, result.data);
+            } catch (err) {
+                console.error(`Error processing file ${file.name}:`, err);
             }
-            const bitmap = await createImageBitmap(file);
-            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-            const ctx = canvas.getContext('2d')!;
-            ctx.drawImage(bitmap, 0, 0);
-            const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+        });
 
-            const result = await encodeToHeif([imageData], getEncodingOptions());
-            if (result.error) {
-                console.error(`Error encoding ${file.name}`, result.error);
-                continue;
-            }
+        await Promise.all(tasks);
 
-            const blob = new Blob([result.data as ArrayBuffer], { type: 'image/heic' });
-            const arrayBuffer = await blob.arrayBuffer();
-            const fileName = file.name.replace(/\.[^/.]+$/, "") + ".heic";
-            zip.file(fileName, arrayBuffer);
-        }
-
-        const zipBlob = await zip.generateAsync({ type: "blob" });
-        saveAs(zipBlob, "converted_images.zip");
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        saveAs(zipBlob, 'converted_images.zip');
+        // zipBlob
     }
 </script>
 
