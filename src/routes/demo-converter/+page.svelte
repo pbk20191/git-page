@@ -24,20 +24,6 @@
             URL.revokeObjectURL(downloadUrl)
         }
     })
-    function base64ToArrayBuffer(base64: string) {
-        var binaryString = atob(base64);
-        var bytes = new Uint8Array(binaryString.length);
-        for (var i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes;
-    }
-
-    function loadHeicImage() {
-        const DATA =
-            "AAAAHGZ0eXBoZWljAAAAAG1pZjFoZWljbWlhZgAAApRtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAAA5waXRtAAAAAAABAAAANGlsb2MAAAAAREAAAgABAAAAAAK4AAEAAAAAAAAAMgACAAAAAALqAAEAAAAAAAAAIwAAADhpaW5mAAAAAAACAAAAFWluZmUCAAAAAAEAAGh2YzEAAAAAFWluZmUCAAAAAAIAAGh2YzEAAAAB02lwcnAAAAGsaXBjbwAAAHZodmNDAQNwAAAAAAAAAAAAHvAA/P34+AAADwMgAAEAGEABDAH//wNwAAADAJAAAAMAAAMAHroCQCEAAQAqQgEBA3AAAAMAkAAAAwAAAwAeoCCBBZbqrprm4CGgwIAAAAMAgAAAAwCEIgABAAZEAcFzwYkAAAAUaXNwZQAAAAAAAABAAAAAQAAAAChjbGFwAAAACgAAAAEAAAAKAAAAAf///8oAAAAC////ygAAAAIAAAAQcGl4aQAAAAADCAgIAAAAcWh2Y0MBBAgAAAAAAAAAAAAe8AD8/Pj4AAAPAyAAAQAXQAEMAf//BAgAAAMAn/gAAAMAAB66AkAhAAEAJkIBAQQIAAADAJ/4AAADAAAewIIEFluqumubAgAAAwACAAADAAIQIgABAAZEAcFzwYkAAAAUaXNwZQAAAAAAAABAAAAAQAAAAChjbGFwAAAACgAAAAEAAAAKAAAAAf///8oAAAAC////ygAAAAIAAAAOcGl4aQAAAAABCAAAACdhdXhDAAAAAHVybjptcGVnOmhldmM6MjAxNTphdXhpZDoxAAAAAB9pcG1hAAAAAAAAAAIAAQSBAoMEAAIFhQaHCIkAAAAaaXJlZgAAAAAAAAAOYXV4bAACAAEAAQAAAF1tZGF0AAAALigBrxMhYmNA9Sci//75Mn/pHyf9QdlhZ3K6wVvy+sD2ZJvA86qRnoCHaacwFXgAAAAfKAGuJkJKJOfXDbP+G8cXYVVzU7JsIGJEKRKAY/X0rg==";
-        return base64ToArrayBuffer(DATA)
-    }
 
     async function encodeToHeif(data: ImageData[], options?: EncodingOption) {
         const result: ReturnType<MainModule["jsEncodeImages"]> = await pool.exec('jsEncodeImages', [
@@ -51,66 +37,54 @@
         return result
     }
 
-    async function handleFileChange(e: Event) {
-        file = (e.target as HTMLInputElement).files?.[0] ?? null
-        if (!file) return
+    import JSZip from 'jszip';
+    import { saveAs } from 'file-saver';
 
-        const bitmap = await createImageBitmap(file)
-        const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
-        const ctx = canvas.getContext('2d')!
-        ctx.drawImage(bitmap, 0, 0)
-        const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height)
+    async function handleMultipleFilesChange(e: Event) {
+        const files = Array.from((e.target as HTMLInputElement).files ?? []);
+        if (!files.length) return;
 
-        const result = await encodeToHeif([imageData], undefined)
-        if (result.error) {
-            console.error("Error encoding HEIC:", result.error)
-            throw result.error
-                // return
+        const zip = new JSZip();
+
+        for (const file of files) {
+            if (file.type === 'image/heic' || file.type === 'image/heif') {
+                console.warn(`Skipping ${file.name} as it is already in HEIC format.`);
+                
+                zip.file(file.name, await file.arrayBuffer())
+                continue
+            }
+            const bitmap = await createImageBitmap(file);
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const ctx = canvas.getContext('2d')!;
+            ctx.drawImage(bitmap, 0, 0);
+            const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+
+            const result = await encodeToHeif([imageData]);
+            if (result.error) {
+                console.error(`Error encoding ${file.name}`, result.error);
+                continue;
+            }
+
+            const blob = new Blob([result.data as ArrayBuffer], { type: 'image/heic' });
+            const arrayBuffer = await blob.arrayBuffer();
+            const fileName = file.name.replace(/\.[^/.]+$/, "") + ".heic";
+            zip.file(fileName, arrayBuffer);
         }
-        const data = result.data!
-        console.log("received result", result)
-        // result.data.buffer
-        const blob = new Blob([data as ArrayBuffer], { type: 'image/heic' })
-        if (downloadUrl) {
-            URL.revokeObjectURL(downloadUrl)
-        }
-        downloadUrl = URL.createObjectURL(blob)
-    }
-    async function decodeSampleImage() {
-        // const response = await fetch("/example.heic")
-        // const buffer = new Uint8Array(await response.arrayBuffer())
-        
-        const buffer = loadHeicImage()
-        console.log("window input decodeSampleImage",buffer)
-        const result = await decodeHeif(buffer)
-        if (result.error) {
-            console.error("Error decoding HEIC:", result.error)
-            throw result.error
-        }
-        const data = result.data!
-        console.log("decodeSampleImage" , result)
-        const ctx = previewCanvas.getContext('2d')!
-        // const bitmap = heif_module.decode(buffer, buffer.length, true)
-        previewCanvas.width = 10
-        previewCanvas.height = 10
-        const imageData = data[0]
-        ctx.putImageData(imageData, 0, 0)
-        const encodedData = await encodeToHeif(data, undefined)
-        const blob = new Blob([encodedData as ArrayBuffer], { type: 'image/heic' })
-        if (downloadUrl) {
-            URL.revokeObjectURL(downloadUrl)
-        }
-        downloadUrl = URL.createObjectURL(blob)
+
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        saveAs(zipBlob, "converted_images.zip");
     }
 </script>
 
 <div class="text-column">
     <h1>About this app</h1>
-    <input type="file" accept="image/*" on:change={handleFileChange} />
-    <button on:click={decodeSampleImage}>샘플 HEIC 디코딩 보기</button>
+    <!-- <input type="file" accept="image/*" on:change={handleFileChange} /> -->
+    <!-- <button on:click={decodeSampleImage}>샘플 HEIC 디코딩 보기</button> -->
     <br />
-    <canvas bind:this={previewCanvas} style="border: 1px solid #ccc; margin-top: 1rem;" />
+    <input type="file" multiple accept="image/*" on:change={handleMultipleFilesChange} />
+    <!-- <canvas bind:this={previewCanvas} style="border: 1px solid #ccc; margin-top: 1rem;" />
     {#if downloadUrl}
         <p><a href={downloadUrl} download="converted.heic">Download HEIC</a></p>
     {/if}
+     -->
 </div>
