@@ -29,7 +29,6 @@
 	},
 	"dependencies": {
 		"elheif": "file:elheif-0.1.2.tgz",
-		"file-saver": "^2.0.5",
 		"icodec": "^0.6.0",
 		"jszip": "^3.10.1",
 		"workerpool": "^9.2.0"

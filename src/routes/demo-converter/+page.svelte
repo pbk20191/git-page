@@ -12,7 +12,7 @@
     let quality = 80;
     let lossless = false;
     let sharpYUV = false;
-
+    let downloadUrl: string | undefined = undefined;
     function getEncodingOptions(): EncodingOption | undefined {
         if (useDefaultOption) return undefined;
         return {
@@ -21,7 +21,13 @@
             sharpYUV
         };
     }
-
+    onDestroy(() => {
+        if (downloadUrl) {
+            URL.revokeObjectURL(downloadUrl);
+            downloadUrl = undefined;
+        }
+        // Clean up any resources if needed
+    });
 
     // async function encodeToHeif(data: File, options?: EncodingOption) {
     //     const result: ReturnType<MainModule["jsEncodeImages"]> = await pool.exec('jsEncodeImages', [
@@ -36,7 +42,8 @@
     // }
 
     import JSZip from 'jszip';
-    import { saveAs } from 'file-saver';
+    // import { saveAs } from 'file-saver';
+    // import { on } from 'svelte/events';
 
     async function handleMultipleFilesChange(e: Event) {
         const files = Array.from((e.target as HTMLInputElement).files ?? []);
@@ -80,7 +87,11 @@
             }));
             // await Promise.all(tasks);
             const zipBlob = await zip.generateAsync({ type: 'blob' });
-            saveAs(zipBlob, 'converted_images.zip');
+            if (downloadUrl) {
+                URL.revokeObjectURL(downloadUrl);
+            }
+            downloadUrl = URL.createObjectURL(zipBlob);
+            // saveAs(zipBlob, 'converted_images.zip');
         } finally {
             pool.terminate();
         }
@@ -116,9 +127,9 @@
     <!-- <button on:click={decodeSampleImage}>샘플 HEIC 디코딩 보기</button> -->
     <br />
     <input type="file" multiple accept="image/*" on:change={handleMultipleFilesChange} />
-    <!-- <canvas bind:this={previewCanvas} style="border: 1px solid #ccc; margin-top: 1rem;" />
+    <!-- <canvas bind:this={previewCanvas} style="border: 1px solid #ccc; margin-top: 1rem;" /> -->
     {#if downloadUrl}
-        <p><a href={downloadUrl} download="converted.heic">Download HEIC</a></p>
+        <p><a href={downloadUrl} download="converted.zip">Download zip</a></p>
     {/if}
-     -->
+    
 </div>
