@@ -21,25 +21,19 @@
             sharpYUV
         };
     }
-    const pool = workerPool(HEICWorker, { workerOpts: { type: 'module' } })
-    onDestroy(() => {
-        pool.terminate(true)
-        .catch((e) => {
-            console.error("failure",e)
-        })
-    })
 
-    async function encodeToHeif(data: File, options?: EncodingOption) {
-        const result: ReturnType<MainModule["jsEncodeImages"]> = await pool.exec('jsEncodeImages', [
-            data, options
-        ])
-        return result
-    }
 
-    async function decodeHeif(buffer: File) {
-        const result:ReturnType<MainModule["jsDecodeImage"]> = await pool.exec('jsDecodeImage', [buffer])
-        return result
-    }
+    // async function encodeToHeif(data: File, options?: EncodingOption) {
+    //     const result: ReturnType<MainModule["jsEncodeImages"]> = await pool.exec('jsEncodeImages', [
+    //         data, options
+    //     ])
+    //     return result
+    // }
+
+    // async function decodeHeif(buffer: File) {
+    //     const result:ReturnType<MainModule["jsDecodeImage"]> = await pool.exec('jsDecodeImage', [buffer])
+    //     return result
+    // }
 
     import JSZip from 'jszip';
     import { saveAs } from 'file-saver';
@@ -47,33 +41,50 @@
     async function handleMultipleFilesChange(e: Event) {
         const files = Array.from((e.target as HTMLInputElement).files ?? []);
         if (!files.length) return;
+        const pool = workerPool(HEICWorker, { workerOpts: { type: 'module' } })
 
-        const zip = new JSZip();
 
         const tasks = files.map(async (file) => {
             try {
                 if (file.type === 'image/heic' || file.type === 'image/heif') {
                     console.warn(`Skipping ${file.name} as it is already in HEIC format.`);
                     // const buffer = await file.arrayBuffer();
-                    zip.file(file.name, file);
-                    return;
+                    // zip.file(file.name, file);
+                    // return;
+                    return file
                 }
-                const result = await encodeToHeif(file, getEncodingOptions());
+                
+                const result: ReturnType<MainModule["jsEncodeImages"]> = await pool.exec('jsEncodeImages', [file, getEncodingOptions()]);
                 if (result.error) {
                     console.error(`Error encoding ${file.name}`, result.error);
-                    return;
+                    throw result.error;
+                    // return;
                 }
                 const outputName = file.name.replace(/\.[^/.]+$/, '') + '.heic';
-                zip.file(outputName, result.data);
+                // zip.file(outputName, result.data);
+                return new File([result.data! as ArrayBuffer], outputName, { type: 'image/heic' });
             } catch (err) {
                 console.error(`Error processing file ${file.name}:`, err);
+                throw err;
             }
         });
 
-        await Promise.all(tasks);
-
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        saveAs(zipBlob, 'converted_images.zip');
+        try {
+            const zip = new JSZip();
+            await (Promise.all(tasks).then((files) => {
+                files.forEach((file) => {
+                    if (file instanceof File) {
+                        zip.file(file.name, file);
+                    }
+                });
+            }));
+            // await Promise.all(tasks);
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            saveAs(zipBlob, 'converted_images.zip');
+        } finally {
+            pool.terminate();
+        }
+        
         // zipBlob
     }
 </script>
