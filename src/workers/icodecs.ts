@@ -15,7 +15,7 @@ import WEBPEncWASM from "icodec/webp-enc.wasm?url";
 
 export type * from "icodec"
 
-export async function encodeToHEIC(
+async function encodeToHEIC(
     image:ImageDataLike,
     option?:heic.Options
 ) {
@@ -26,20 +26,18 @@ export async function encodeToHEIC(
     )
 } 
 
-
-
-export async function encodeToWEPB(
+async function encodeToWEPB(
     image:ImageDataLike,
     option?:webp.Options
 ) {
     await webp.loadEncoder(WEBPEncWASM)
-    let data = heic.encode(image, option)
+    let data = webp.encode(image, option)
     return Comlink.transfer(
         data, [data.buffer]
     )
 }
 
-export async function encodeToAVIF(
+async function encodeToAVIF(
     image:ImageDataLike,
     option?:avif.Options
 ) {
@@ -73,6 +71,53 @@ export async function bitmapToHEIC(
     }
 }
 
+export async function bitmapToAVIF(
+    bitmap: ImageBitmap,
+    option?:avif.Options
+) {
+    try {
+        const canvas = new OffscreenCanvas(
+            bitmap.width, bitmap.height
+        )
+        const ctx = canvas.getContext("2d")!
+        ctx.drawImage(bitmap, 0,0)
+        const imageData = ctx.getImageData(0,0, bitmap.width, bitmap.height)
+        const result:ImageDataLike = {
+            width: imageData.width,
+            height: imageData.height,
+            depth: 8,
+            data: imageData.data
+        }
+        return await encodeToAVIF(result, option)
+    } finally {
+        bitmap.close()
+    }
+}
+
+export async function bitmapToWEBP(
+    bitmap: ImageBitmap,
+    option?:webp.Options
+) {
+    try {
+        const canvas = new OffscreenCanvas(
+            bitmap.width, bitmap.height
+        )
+        const ctx = canvas.getContext("2d")!
+        ctx.drawImage(bitmap, 0,0)
+        const imageData = ctx.getImageData(0,0, bitmap.width, bitmap.height)
+        const result:ImageDataLike = {
+            width: imageData.width,
+            height: imageData.height,
+            depth: 8,
+            data: imageData.data
+        }
+        return await encodeToWEPB(result, option)
+    } finally {
+        bitmap.close()
+    }
+}
+
+
 Comlink.expose({
-    encodeToAVIF, encodeToHEIC, encodeToWEPB, bitmapToHEIC,
+    bitmapToHEIC, bitmapToAVIF, bitmapToWEBP
 })
