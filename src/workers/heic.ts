@@ -9,8 +9,7 @@ const sw = self as unknown as DedicatedWorkerGlobalScope;
 // heic.worker.ts
 import * as elheif from 'elheif'
 import MainModuleFactory from 'elheif';
-import { worker } from 'workerpool'
-import { heic } from "icodec"
+import * as Comlink from "comlink"
 
 // let block = heic.loadEncoder()
 
@@ -25,7 +24,7 @@ var moduleHolder = {
 let heifModule: Promise<elheif.MainModule> | null = null
 
 
-async function jsEncodeImages(file: File, option?: elheif.EncodingOption) {
+export async function jsEncodeImages(file: File, option?: elheif.EncodingOption) {
     await ensureInitialized();
     // await block
     let bitmap = await createImageBitmap(file)
@@ -38,15 +37,24 @@ async function jsEncodeImages(file: File, option?: elheif.EncodingOption) {
     let imageData = context.getImageData(0,0, canvas.width, canvas.height)
     const result = (moduleHolder as elheif.MainModule).jsEncodeImages([imageData], option);
     console.log("worker jsEncodeImage send",result);
-    return result;
+    if (result.data) {
+        return Comlink.transfer(result, [result.data])
+    } else {
+        return result
+    }
 }
 
-async function jsDecodeImage(file: File) {
+export async function jsDecodeImage(file: File) {
     await ensureInitialized();
     const result = (moduleHolder as elheif.MainModule).jsDecodeImage(await file.arrayBuffer());
     // if (result.err) throw new Error(result.err);
+    type Foo = typeof result;
     console.log("worker jsDecodeImage send",result);
-    return result;
+    if (result.data) {
+        return Comlink.transfer(result, [result.data]) as Foo
+    } else {
+        return result
+    }
 }
 
 async function ensureInitialized() {
@@ -56,7 +64,7 @@ async function ensureInitialized() {
     await heifModule;
 }
 
-async function prune() {
+export async function prune() {
     heifModule = null;
     moduleHolder = {};
 }
@@ -75,4 +83,7 @@ async function prune() {
 
 // }
 
-worker({ jsEncodeImages, jsDecodeImage, prune });
+// worker({ jsEncodeImages, jsDecodeImage, prune });
+Comlink.expose(
+    { jsEncodeImages, jsDecodeImage, prune }
+)

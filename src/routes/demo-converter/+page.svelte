@@ -4,7 +4,7 @@
 </svelte:head>
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-    import { pool as workerPool } from "workerpool"
+    import * as Comlink from "comlink"
     import HEICWorker from '$workers/heic?worker&url'
     import type { EncodingOption } from 'elheif';
     import type { MainModule }  from 'elheif';
@@ -21,23 +21,24 @@
             sharpYUV
         };
     }
-    const pool = workerPool(HEICWorker, { workerOpts: { type: 'module' } })
+    const worker =  new Worker(HEICWorker, { type: "module"})
+    const pool = Comlink.wrap<typeof import("$workers/heic")>(
+       worker
+    )
+    
     onDestroy(() => {
-        pool.terminate(true)
-        .catch((e) => {
-            console.error("failure",e)
-        })
+        worker.terminate()
     })
 
     async function encodeToHeif(data: File, options?: EncodingOption) {
-        const result: ReturnType<MainModule["jsEncodeImages"]> = await pool.exec('jsEncodeImages', [
-            data, options
-        ])
+        const result: ReturnType<MainModule["jsEncodeImages"]> = await pool.jsEncodeImages(
+          data, options
+        )
         return result
     }
 
     async function decodeHeif(buffer: File) {
-        const result:ReturnType<MainModule["jsDecodeImage"]> = await pool.exec('jsDecodeImage', [buffer])
+        const result:ReturnType<MainModule["jsDecodeImage"]> = await pool.jsDecodeImage(buffer)
         return result
     }
 
