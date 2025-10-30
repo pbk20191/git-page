@@ -24,8 +24,11 @@
 			<li aria-current={page.url.pathname === base + "/about" ? "page" : undefined}>
 				<a href="{base}/about">About</a>
 			</li>
-			<li aria-current={page.url.pathname === base + "/demo-converter" ? "page" : undefined}>
+			<!-- <li aria-current={page.url.pathname === base + "/demo-converter" ? "page" : undefined}>
 				<a href="{base}/demo-converter">demo-converter!</a>
+			</li> -->
+			<li aria-current={page.url.pathname === base + "/icodec-converter" ? "page" : undefined}>
+				<a href="{base}/icodec-converter">icodec-converter!</a>
 			</li>
 		</ul>
 		<svg viewBox="0 0 2 3" aria-hidden="true">

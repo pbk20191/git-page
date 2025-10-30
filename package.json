@@ -7,7 +7,7 @@
 	"scripts": {
 		"predeploy": "npm run build",
 		"deploy": "gh-pages -d build",
-		"dev": "vite dev",
+		"dev": "vite dev --host",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -28,10 +28,10 @@
 		"vite": "^6.2.5"
 	},
 	"dependencies": {
+		"comlink": "^4.4.2",
 		"elheif": "file:elheif-0.1.2.tgz",
 		"file-saver": "^2.0.5",
 		"icodec": "^0.6.0",
-		"jszip": "^3.10.1",
-		"workerpool": "^9.2.0"
+		"jszip": "^3.10.1"
 	}
 }
