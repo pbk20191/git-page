@@ -143,7 +143,7 @@
 </style>
 
 <div class="card">
-  <div class="title">x265 (HEVC) Options</div>
+  <div class="title">HEIC  (x265,HEVC) Options</div>
 
   <div class="grid">
     <div>

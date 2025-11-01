@@ -12,20 +12,23 @@
 <section>
 	<h1>
 		<span class="welcome">
-			<picture>
-				<source srcset={welcome} type="image/webp" />
+			<picture >
+				<source srcset="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQX67hK2DA8b2tDOb7l3Epn-tWafszgyweXOw&s" type="image/jpeg"/>
+				<!-- <source srcset={welcome} type="image/webp" /> -->
+
 				<img src={welcomeFallback} alt="Welcome" />
 			</picture>
 		</span>
 
-		to your new<br />SvelteKit app
+		<!-- 이럇샤이<br />마세 -->
 	</h1>
+	<h2>기능</h2>
+	<ul>
+		<li>png/jpeg => webp, avif, heic 인코더</li>
+		<li>안드로이드 나인패치 이미지(.9.png) => iOS 나인패치 어셋팩 변환기 (WIP)</li>
+	</ul>
 
-	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
-	</h2>
-
-	<Counter />
+	<!-- <Counter /> -->
 </section>
 
 <style>
@@ -50,9 +53,9 @@
 	}
 
 	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
+		/* position: absolute; */
+		/* width: 100%; */
+		/* height: 100%; */
 		top: 0;
 		display: block;
 	}

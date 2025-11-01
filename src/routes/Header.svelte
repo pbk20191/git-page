@@ -7,11 +7,11 @@
 </script>
 
 <header>
-	<div class="corner">
+	<!-- <div class="corner">
 		<a href="https://svelte.dev/docs/kit">
 			<img src={logo} alt="SvelteKit" />
 		</a>
-	</div>
+	</div> -->
 
 	<nav>
 		<svg viewBox="0 0 2 3" aria-hidden="true">
@@ -21,14 +21,14 @@
 			<li aria-current={page.url.pathname === base + "/" ? "page" : undefined}>
 				<a href="{base}/">Home</a>
 			</li>
-			<li aria-current={page.url.pathname === base + "/about" ? "page" : undefined}>
+			<!-- <li aria-current={page.url.pathname === base + "/about" ? "page" : undefined}>
 				<a href="{base}/about">About</a>
-			</li>
+			</li> -->
 			<!-- <li aria-current={page.url.pathname === base + "/demo-converter" ? "page" : undefined}>
 				<a href="{base}/demo-converter">demo-converter!</a>
 			</li> -->
 			<li aria-current={page.url.pathname === base + "/icodec-converter" ? "page" : undefined}>
-				<a href="{base}/icodec-converter">icodec-converter!</a>
+				<a href="{base}/icodec-converter">encode_Image</a>
 			</li>
 		</ul>
 		<svg viewBox="0 0 2 3" aria-hidden="true">
@@ -36,11 +36,11 @@
 		</svg>
 	</nav>
 
-	<div class="corner">
+	<!-- <div class="corner">
 		<a href="https://github.com/sveltejs/kit">
 			<img src={github} alt="GitHub" />
 		</a>
-	</div>
+	</div> -->
 </header>
 
 <style>

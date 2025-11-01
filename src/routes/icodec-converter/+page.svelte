@@ -125,12 +125,8 @@
     <meta name="description" content="Converter for heif" />
 </svelte:head>
 
-<div>
-    <Webp value={store.webp} onApply={(option) => onApply({ type:"webp", option})} onChange={(option) => onChange({ type:'webp', option })}/>
-    <Heic value={store.heic} onApply={(option) => onApply({ type:"heic", option})} onChange={(option) => onChange({ type:'heic', option })}/>
-    <Avif value={store.avif} onApply={(option) => onApply({ type:"avif", option})} onChange={(option) => onChange({ type:'avif', option })}/>
+<div>  
     <span>  상당히 느립니다.</span>
-
     <label for="images">images</label>
     <input
         type="file"
@@ -139,5 +135,7 @@
         accept="image/png, image/jpeg"
         on:change={handleMultipleFilesChange}
     />
-
+    <Webp value={store.webp} onApply={(option) => onApply({ type:"webp", option})} onChange={(option) => onChange({ type:'webp', option })}/>
+    <Heic value={store.heic} onApply={(option) => onApply({ type:"heic", option})} onChange={(option) => onChange({ type:'heic', option })}/>
+    <Avif value={store.avif} onApply={(option) => onApply({ type:"avif", option})} onChange={(option) => onChange({ type:'avif', option })}/>
 </div>
