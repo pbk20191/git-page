@@ -1,5 +1,5 @@
-<script lang="ts">
-    import { onDestroy } from "svelte";
+<script module lang="ts">
+    import { onDestroy, onMount } from "svelte";
     import * as Comlink from "comlink";
     import ICODEC from "$workers/icodecs?worker&url";
     import JSZip from "jszip";
@@ -9,28 +9,28 @@
     import Webp, { type WebpOption } from "$lib/encoderUI/webp.svelte";
     import Avif, {type AvifOption} from "$lib/encoderUI/avif.svelte";
     import { avif, heic, webp } from "icodec";
-    type HeicEvent = {
-        type:"heic",
-        option:HeicOption
-    }
-    type WebpEvent = {
-        type:"webp",
-        option:WebpOption
-    }
-    type AvifEvent = {
-        type:"avif",
-        option:AvifOption
-    }
-    type ConfigEvent = HeicEvent|WebpEvent|AvifEvent
+    import { writable } from "svelte/store";
 
-    let store = {
 
+    const store_key = "icodec_encoder_options"
+</script>
+<script lang="ts">
+
+    let store = $state({
+        webp: {...webp.defaultOptions},
+        avif: { ...avif.defaultOptions},
+        heic: {...heic.defaultOptions}
     } as {
-        webp?:webp.Options,
-        avif?:avif.Options,
-        heic?:heic.Options
-    }
-
+        webp:webp.Options,
+        avif:avif.Options,
+        heic:heic.Options
+    })
+    onMount(() => {
+        let value = window.localStorage.getItem(store_key)
+        if (value) {
+            store = JSON.parse(value)
+        }
+    })
     async function processFiles(files:File[]) {
         if (!files.length) return;
         const worker = new Worker(ICODEC, { type: "module" });
@@ -48,7 +48,7 @@
             const tasks = files.map(async (file) => {
                 let bitmap = await createImageBitmap(file);
                 const result = await pool.encodeBitmap(
-                    Comlink.transfer(bitmap, [bitmap]), store
+                    Comlink.transfer(bitmap, [bitmap]), $state.snapshot(store)
                 )
 
                 const outputName = file.name.replace(/\.[^/.]+$/, "");
@@ -96,27 +96,18 @@
         }
     }
 
-    async function handleMultipleFilesChange(event: Event) {
+    async function handleMultipleFilesChange(event: Event & { currentTarget: EventTarget & HTMLInputElement; }) {
         const files = Array.from(
-            (event.target as HTMLInputElement).files ?? [],
+            (event.currentTarget as HTMLInputElement).files ?? [],
         );
         processFiles(files)
       
     }
 
+    let a = $state({...avif.defaultOptions})
 
-    function onApply(e:ConfigEvent) {
-        if (e.type === 'avif') {
-            store.avif = e.option
-        } else if (e.type === 'webp') {
-            store.webp = e.option
-        } else if (e.type === 'heic') {
-            store.heic = e.option
-        }
-        console.log(e, store)
-    }
-    function onChange(e:ConfigEvent) {
-        
+    function onApply(e:MouseEvent ) {
+        window.localStorage.setItem("icodec_encoder_options",JSON.stringify($state.snapshot(store)))
     }
 </script>
 
@@ -133,9 +124,10 @@
         name="images"
         multiple
         accept="image/png, image/jpeg"
-        on:change={handleMultipleFilesChange}
+        onchange={handleMultipleFilesChange}
     />
-    <Webp value={store.webp} onApply={(option) => onApply({ type:"webp", option})} onChange={(option) => onChange({ type:'webp', option })}/>
-    <Heic value={store.heic} onApply={(option) => onApply({ type:"heic", option})} onChange={(option) => onChange({ type:'heic', option })}/>
-    <Avif value={store.avif} onApply={(option) => onApply({ type:"avif", option})} onChange={(option) => onChange({ type:'avif', option })}/>
+    <Webp bind:value={store.webp} />
+    <Heic bind:value={store.heic}/>
+    <Avif bind:value={store.avif}/>
+    <button onclick={onApply}>save config in local</button>
 </div>

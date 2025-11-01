@@ -5,28 +5,14 @@
 </script>
 <script lang="ts">
 
-  // --- CALLBACK PROPS (Svelte 5 recommended) ---
-  /** optional callback called on every local change (live) */
-  export let onChange: ((value: HeicOption) => void) | undefined;
+    let {
+       value = $bindable(),
+       ...props
+    }: {
+      value:HeicOption
+    }  = $props()
 
-  /** optional callback called when user clicks 'Apply' */
-  export let onApply: ((value: HeicOption) => void) | undefined;
 
-  /** initial controlled value (parent may pass) — read-only for this component */
-  export let value: HeicOption | undefined = undefined;
-
-  // local editable state (component owns edits)
-  let local: HeicOption = {...heic.defaultOptions }
-  // sync when parent provides a value (shallow/structural check)
-  $: if (value) {
-    try {
-      if (JSON.stringify(value) !== JSON.stringify(local)) {
-        local = { ...value };
-      }
-    } catch {
-      local = { ...value };
-    }
-  }
 
   // clamp helpers
   function clamp(n: number | undefined, min: number, max: number, def: number) {
@@ -34,45 +20,14 @@
     return Math.max(min, Math.min(max, n));
   }
 
-  // call the provided callback if exists
-  function emitChange() {
-    local = {
-      ...local,
-      quality: clamp(local.quality, 0, 100, 50),
-      tuIntraDepth: clamp(local.tuIntraDepth, 1, 4, 2),
-      complexity: clamp(local.complexity, 0, 100, 50)
-    };
-    onChange?.({ ...local });
-  }
 
-  function apply() {
-    onApply?.({ ...local });
-  }
 
   function resetDefaults() {
-    local = {
-      quality: 50,
-      lossless: false,
-      preset: 'slow',
-      tune: 'ssim',
-      tuIntraDepth: 2,
-      complexity: 50,
-      chroma: '420',
-      sharpYUV: false
+    value = {
+      ...heic.defaultOptions
     };
-    emitChange();
   }
 
-  function exportJSON() {
-    const json = JSON.stringify(local, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'x265-options.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   const tooltip = {
     quality:`
@@ -148,19 +103,19 @@
   <div class="grid">
     <div>
       <div class="row">
-        <label title={tooltip.quality}>Quality <span class="muted">{local.quality ?? 50}</span></label>
+        <label title={tooltip.quality}>Quality <span class="muted">{value.quality ?? 50}</span></label>
       </div>
       <div class="row">
-        <input type="range" min="0" max="100" bind:value={local.quality} on:input={emitChange} />
+        <input type="range" min="0" max="100" bind:value={value.quality} />
       </div>
 
       <div class="row">
-        <label title={tooltip.lossless}><input type="checkbox" bind:checked={local.lossless} on:change={emitChange} /> Lossless</label>
+        <label title={tooltip.lossless}><input type="checkbox" bind:checked={value.lossless}/> Lossless</label>
       </div>
 
       <div class="row">
         <label title={tooltip.preset} >Preset</label>
-        <select bind:value={local.preset} on:change={emitChange}>
+        <select bind:value={value.preset}>
           {#each heic.Presets as p}
             <option value={p}>{p}</option>
           {/each}
@@ -169,7 +124,7 @@
 
       <div class="row">
         <label title={tooltip.tune} >Tune</label>
-        <select bind:value={local.tune} on:change={emitChange}>
+        <select bind:value={value.tune} >
           {#each heic.Tune as t}
             <option value={t}>{t}</option>
           {/each}
@@ -177,24 +132,24 @@
       </div>
 
       <div class="row">
-        <label title={tooltip.tuIntraDepth} >TU Intra Depth <span class="muted">{local.tuIntraDepth}</span></label>
+        <label title={tooltip.tuIntraDepth} >TU Intra Depth <span class="muted">{value.tuIntraDepth}</span></label>
       </div>
       <div class="row">
-        <input type="range" min="1" max="4" bind:value={local.tuIntraDepth} on:input={emitChange} />
+        <input type="range" min="1" max="4" bind:value={value.tuIntraDepth} />
       </div>
     </div>
 
     <div>
       <div class="row">
-        <label title={tooltip.complexity}>Complexity <span class="muted">{local.complexity}</span></label>
+        <label title={tooltip.complexity}>Complexity <span class="muted">{value.complexity}</span></label>
       </div>
       <div class="row">
-        <input type="range" min="0" max="100" bind:value={local.complexity} on:input={emitChange} />
+        <input type="range" min="0" max="100" bind:value={value.complexity} />
       </div>
 
       <div class="row">
         <label title={tooltip.chroma}>Chroma</label>
-        <select bind:value={local.chroma} on:change={emitChange}>
+        <select bind:value={value.chroma} >
           {#each heic.Subsampling as s}
             <option value={s}>{s}</option>
           {/each}
@@ -202,18 +157,14 @@
       </div>
 
       <div class="row">
-        <label title={tooltip.sharpYUV}><input type="checkbox" bind:checked={local.sharpYUV} on:change={emitChange} /> Sharp YUV</label>
+        <label title={tooltip.sharpYUV}><input type="checkbox" bind:checked={value.sharpYUV} /> Sharp YUV</label>
       </div>
 
       <div class="row">
         <button on:click={resetDefaults}>Reset</button>
-        <div style="flex:1"></div>
-        <button on:click={exportJSON}>Export</button>
       </div>
 
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-        <button on:click={apply}>Apply</button>
-      </div>
+
     </div>
   </div>
 </div>
