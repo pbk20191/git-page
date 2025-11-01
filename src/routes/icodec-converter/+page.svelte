@@ -5,136 +5,86 @@
     import JSZip from "jszip";
     import saveAs from "file-saver";
     import "icodec";
+    import Heic, { type HeicOption } from "$lib/encoderUI/heic.svelte";
+    import Webp, { type WebpOption } from "$lib/encoderUI/webp.svelte";
+    import Avif, {type AvifOption} from "$lib/encoderUI/avif.svelte";
+    import { avif, heic, webp } from "icodec";
+    type HeicEvent = {
+        type:"heic",
+        option:HeicOption
+    }
+    type WebpEvent = {
+        type:"webp",
+        option:WebpOption
+    }
+    type AvifEvent = {
+        type:"avif",
+        option:AvifOption
+    }
+    type ConfigEvent = HeicEvent|WebpEvent|AvifEvent
+
+    let store = {
+
+    } as {
+        webp?:webp.Options,
+        avif?:avif.Options,
+        heic?:heic.Options
+    }
+
+    async function processFiles(files:File[]) {
+        if (!files.length) return;
+        const worker = new Worker(ICODEC, { type: "module" });
+        const pool = Comlink.wrap<typeof import("$workers/icodecs")>(worker);
+        const zip = new JSZip();
+        const heicFolder = zip.folder("heic")
+        const webpFolder = zip.folder("webp")
+        const avifFolder = zip.folder("avif")
+        try {
+            const tasks = files.map(async (file) => {
+                let bitmap = await createImageBitmap(file);
+                const heicResult = await pool.bitmapToHEIC(
+                    Comlink.transfer(bitmap, [bitmap]), store.heic
+                );
+                const webpResult = await pool.bitmapToWEBP(
+                    Comlink.transfer(heicResult.bitmap, [heicResult?.bitmap]), store.webp
+                )
+                const avifResult = await pool.bitmapToAVIF(
+                    Comlink.transfer(webpResult.bitmap, [webpResult.bitmap]), store.avif
+                )
+                const outputName = file.name.replace(/\.[^/.]+$/, "");
+                heicFolder?.file(outputName + ".heic", heicResult.data)
+                webpFolder?.file(outputName + ".webp", webpResult.data)
+                avifFolder?.file(outputName + ".avif", avifResult.data)
+            })
+            await Promise.all(tasks);
+            const zipBlob = await zip.generateAsync({ type: "blob" });
+            saveAs(zipBlob, "converted_images.zip");
+        } finally {
+            worker.terminate()
+        }
+    }
 
     async function handleMultipleFilesChange(event: Event) {
         const files = Array.from(
             (event.target as HTMLInputElement).files ?? [],
         );
-        if (!files.length) return;
-        const worker = new Worker(ICODEC, { type: "module" });
-        const pool = Comlink.wrap<typeof import("$workers/icodecs")>(worker);
-        const zip = new JSZip();
-            
-        try {
-            const tasks = files.map(async (file) => {
-                try {
-                    if (
-                        file.type === "image/heic" ||
-                        file.type === "image/heif"
-                    ) {
-                        console.warn(
-                            `Skipping ${file.name} as it is already in HEIC format.`,
-                        );
-                        // const buffer = await file.arrayBuffer();
-                        zip.file(file.name, file);
-                        return;
-                    }
-                    let bitmap = await createImageBitmap(file);
-                    const result = await pool.bitmapToHEIC(
-                        Comlink.transfer(bitmap, [bitmap]),
-                    );
-
-                    const outputName =
-                        file.name.replace(/\.[^/.]+$/, "") + ".heic";
-                    zip.file(outputName, result);
-                } catch (err) {
-                    console.error(`Error processing file ${file.name}:`, err);
-                }
-            });
-
-            await Promise.all(tasks);
-
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-            saveAs(zipBlob, "converted_images.zip");
-        } finally {
-            worker.terminate();
-        }
+        processFiles(files)
+      
     }
-        async function handleMultipleFilesChange1(event: Event) {
-        const files = Array.from(
-            (event.target as HTMLInputElement).files ?? [],
-        );
-        if (!files.length) return;
-        const worker = new Worker(ICODEC, { type: "module" });
-        const pool = Comlink.wrap<typeof import("$workers/icodecs")>(worker);
-        const zip = new JSZip();
-            
-        try {
-            const tasks = files.map(async (file) => {
-                try {
-                    if (
-                        file.type === "image/webp"
-                    ) {
-                        console.warn(
-                            `Skipping ${file.name} as it is already in webp format.`,
-                        );
-                        // const buffer = await file.arrayBuffer();
-                        zip.file(file.name, file);
-                        return;
-                    }
-                    let bitmap = await createImageBitmap(file);
-                    const result = await pool.bitmapToWEBP(
-                        Comlink.transfer(bitmap, [bitmap]),
-                    );
 
-                    const outputName =
-                        file.name.replace(/\.[^/.]+$/, "") + ".webp";
-                    zip.file(outputName, result);
-                } catch (err) {
-                    console.error(`Error processing file ${file.name}:`, err);
-                }
-            });
 
-            await Promise.all(tasks);
-
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-            saveAs(zipBlob, "converted_images.zip");
-        } finally {
-            worker.terminate();
+    function onApply(e:ConfigEvent) {
+        if (e.type === 'avif') {
+            store.avif = e.option
+        } else if (e.type === 'webp') {
+            store.webp = e.option
+        } else if (e.type === 'heic') {
+            store.heic = e.option
         }
+        console.log(e, store)
     }
-        async function handleMultipleFilesChange2(event: Event) {
-        const files = Array.from(
-            (event.target as HTMLInputElement).files ?? [],
-        );
-        if (!files.length) return;
-        const worker = new Worker(ICODEC, { type: "module" });
-        const pool = Comlink.wrap<typeof import("$workers/icodecs")>(worker);
-        const zip = new JSZip();
-            
-        try {
-            const tasks = files.map(async (file) => {
-                try {
-                    if (
-                        file.type === "image/avif"
-                    ) {
-                        console.warn(
-                            `Skipping ${file.name} as it is already in AVIF format.`,
-                        );
-                        // const buffer = await file.arrayBuffer();
-                        zip.file(file.name, file);
-                        return;
-                    }
-                    let bitmap = await createImageBitmap(file);
-                    const result = await pool.bitmapToAVIF(
-                        Comlink.transfer(bitmap, [bitmap]),
-                    );
-
-                    const outputName =
-                        file.name.replace(/\.[^/.]+$/, "") + ".avif";
-                    zip.file(outputName, result);
-                } catch (err) {
-                    console.error(`Error processing file ${file.name}:`, err);
-                }
-            });
-
-            await Promise.all(tasks);
-
-            const zipBlob = await zip.generateAsync({ type: "blob" });
-            saveAs(zipBlob, "converted_images.zip");
-        } finally {
-            worker.terminate();
-        }
+    function onChange(e:ConfigEvent) {
+        
     }
 </script>
 
@@ -144,29 +94,18 @@
 </svelte:head>
 
 <div>
+    <Webp value={store.webp} onApply={(option) => onApply({ type:"webp", option})} onChange={(option) => onChange({ type:'webp', option })}/>
+    <Heic value={store.heic} onApply={(option) => onApply({ type:"heic", option})} onChange={(option) => onChange({ type:'heic', option })}/>
+    <Avif value={store.avif} onApply={(option) => onApply({ type:"avif", option})} onChange={(option) => onChange({ type:'avif', option })}/>
     <span>  상당히 느립니다.</span>
+
     <label for="heic">HEIC</label>
     <input
         type="file"
         name="heif"
         multiple
-        accept="image/*"
+        accept="image/png"
         on:change={handleMultipleFilesChange}
     />
-    <label for="webp">WEBP</label>
-    <input
-        type="file"
-        name="webp"
-        multiple
-        accept="image/*"
-        on:change={handleMultipleFilesChange1}
-    />
-    <label for="avif">AVIF</label>
-    <input
-        type="file"
-        name="avif"
-        multiple
-        accept="image/*"
-        on:change={handleMultipleFilesChange2}
-    />
+
 </div>

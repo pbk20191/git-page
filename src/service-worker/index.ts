@@ -37,7 +37,7 @@ sw.addEventListener("fetch", function (event) {
     if (r.url.includes(".wasm")) {
         return;
     }
-    console.log("fetch", r.url, r.mode, r.cache);
+    // console.log("fetch", r.url, r.mode, r.cache);
     // if (r.mode == "navigate") {
     //     return;
     // }

@@ -21,9 +21,7 @@ async function encodeToHEIC(
 ) {
     await heic.loadEncoder(HEIFEncWASM)
     let data = heic.encode(image, option)
-    return Comlink.transfer(
-        data, [data.buffer]
-    )
+    return data
 } 
 
 async function encodeToWEPB(
@@ -32,9 +30,7 @@ async function encodeToWEPB(
 ) {
     await webp.loadEncoder(WEBPEncWASM)
     let data = webp.encode(image, option)
-    return Comlink.transfer(
-        data, [data.buffer]
-    )
+    return data
 }
 
 async function encodeToAVIF(
@@ -43,9 +39,7 @@ async function encodeToAVIF(
 ) {
     await avif.loadEncoder(AVIFEncWASM)
     let data = avif.encode(image, option)
-    return Comlink.transfer(
-        data, [data.buffer]
-    )
+    return data
 }
 
 export async function bitmapToHEIC(
@@ -65,9 +59,13 @@ export async function bitmapToHEIC(
             depth: 8,
             data: imageData.data
         }
-        return await encodeToHEIC(result, option)
-    } finally {
+        let data = await encodeToHEIC(result, option)
+        return Comlink.transfer({
+            data, bitmap
+        }, [data.buffer, bitmap])
+    }  catch (error) {
         bitmap.close()
+        throw error
     }
 }
 
@@ -88,9 +86,13 @@ export async function bitmapToAVIF(
             depth: 8,
             data: imageData.data
         }
-        return await encodeToAVIF(result, option)
-    } finally {
+        let data =  await encodeToAVIF(result, option)
+        return Comlink.transfer({
+            data, bitmap
+        }, [data.buffer, bitmap])
+    }  catch (error) {
         bitmap.close()
+        throw error
     }
 }
 
@@ -111,9 +113,13 @@ export async function bitmapToWEBP(
             depth: 8,
             data: imageData.data
         }
-        return await encodeToWEPB(result, option)
-    } finally {
+        let data =  await encodeToWEPB(result, option)
+        return Comlink.transfer({
+            data, bitmap
+        }, [data.buffer, bitmap])
+    } catch (error) {
         bitmap.close()
+        throw error
     }
 }
 
