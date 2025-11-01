@@ -39,28 +39,60 @@
         const heicFolder = zip.folder("heic")
         const webpFolder = zip.folder("webp")
         const avifFolder = zip.folder("avif")
+        let errorArrays = [] as {
+            type: "avif" | "webp" | "heic",
+            reason:any,
+            fileName:string
+        }[]
         try {
             const tasks = files.map(async (file) => {
                 let bitmap = await createImageBitmap(file);
-                const heicResult = await pool.bitmapToHEIC(
-                    Comlink.transfer(bitmap, [bitmap]), store.heic
-                );
-                const webpResult = await pool.bitmapToWEBP(
-                    Comlink.transfer(heicResult.bitmap, [heicResult?.bitmap]), store.webp
+                const result = await pool.encodeBitmap(
+                    Comlink.transfer(bitmap, [bitmap]), store
                 )
-                const avifResult = await pool.bitmapToAVIF(
-                    Comlink.transfer(webpResult.bitmap, [webpResult.bitmap]), store.avif
-                )
+
                 const outputName = file.name.replace(/\.[^/.]+$/, "");
-                heicFolder?.file(outputName + ".heic", heicResult.data)
-                webpFolder?.file(outputName + ".webp", webpResult.data)
-                avifFolder?.file(outputName + ".avif", avifResult.data)
+                if (result.avif.status === "fulfilled") {
+                    avifFolder?.file(outputName + ".avif", result.avif.value)
+                } else {
+                    console.error(result.avif.reason)
+                    errorArrays.push({
+                        type:"avif",
+                        reason: result.avif.reason,
+                        fileName: file.name
+                    })
+                }
+                if (result.heic.status === "fulfilled") {
+                    heicFolder?.file(outputName + ".heic", result.heic.value)
+                } else {
+                    console.error(result.heic.reason)
+                    errorArrays.push({
+                        type:"heic",
+                        reason: result.heic.reason,
+                        fileName: file.name
+                    })
+                }
+                if (result.webp.status === 'fulfilled') {
+                    webpFolder?.file(outputName + ".webp", result.webp.value)
+                } else {
+                    console.error(result.webp.reason)
+                    errorArrays.push({
+                        type:"webp",
+                        reason: result.webp.reason,
+                        fileName: file.name
+                    })
+                }
+
             })
             await Promise.all(tasks);
             const zipBlob = await zip.generateAsync({ type: "blob" });
             saveAs(zipBlob, "converted_images.zip");
+
         } finally {
             worker.terminate()
+        }
+        if (errorArrays.length > 1) {
+            alert(JSON.stringify(errorArrays))
         }
     }
 
@@ -99,12 +131,12 @@
     <Avif value={store.avif} onApply={(option) => onApply({ type:"avif", option})} onChange={(option) => onChange({ type:'avif', option })}/>
     <span>  상당히 느립니다.</span>
 
-    <label for="heic">HEIC</label>
+    <label for="images">images</label>
     <input
         type="file"
-        name="heif"
+        name="images"
         multiple
-        accept="image/png"
+        accept="image/png, image/jpeg"
         on:change={handleMultipleFilesChange}
     />
 

@@ -1,6 +1,5 @@
-
-/// <reference types="@sveltejs/kit" />
 /// <reference no-default-lib="true"/>
+/// <reference types="@sveltejs/kit" />
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
 
@@ -123,7 +122,53 @@ export async function bitmapToWEBP(
     }
 }
 
+export async function encodeBitmap(
+    bitmap: ImageBitmap,
+    option?: {
+        webp?:webp.Options,
+        avif?:avif.Options,
+        heic?:heic.Options
+    }
+) {
+    try {
+        const canvas = new OffscreenCanvas(
+            bitmap.width, bitmap.height
+        )
+        const ctx = canvas.getContext("2d")!
+        ctx.drawImage(bitmap, 0,0)
+        const imageData = ctx.getImageData(0,0, bitmap.width, bitmap.height)
+        const result:ImageDataLike = {
+            width: imageData.width,
+            height: imageData.height,
+            depth: 8,
+            data: imageData.data
+        }
+        let batchResult = await Promise.allSettled(
+            [
+                encodeToWEPB(result, option?.webp),
+                encodeToHEIC(result, option?.heic),
+                encodeToAVIF(result, option?.avif)
+            ]
+        )
+        const returnValue = {
+            webp: batchResult[0],
+            heic: batchResult[1],
+            avif: batchResult[2],
+        }
+        let list: Transferable[] = batchResult.flatMap(item => {
+            if (item.status === "fulfilled") {
+                return [item.value.buffer]
+            } else {
+                return []
+            }
+        })
+        return Comlink.transfer(returnValue,list)
+    } finally {
+        bitmap.close()
+    }
+}
+
 
 Comlink.expose({
-    bitmapToHEIC, bitmapToAVIF, bitmapToWEBP
+    bitmapToHEIC, bitmapToAVIF, bitmapToWEBP, encodeBitmap
 })

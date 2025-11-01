@@ -1,8 +1,14 @@
 <script lang="ts">
 	import Header from './Header.svelte';
 	import '../app.css';
+    import { onMount } from 'svelte';
 	// import '$lib/components/service.client.ts';
 	let { children } = $props();
+	onMount(() => {
+		if (navigator.serviceWorker) {
+			console.log("123123123")
+		}
+	})
 </script>
 
 <div class="app">

@@ -1,6 +1,6 @@
 
-/// <reference types="@sveltejs/kit" />
 /// <reference no-default-lib="true"/>
+/// <reference types="@sveltejs/kit" />
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
 
