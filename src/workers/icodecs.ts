@@ -143,17 +143,19 @@ export async function encodeBitmap(
             depth: 8,
             data: imageData.data
         }
+        
         let batchResult = await Promise.allSettled(
             [
                 encodeToWEPB(result, option?.webp),
-                encodeToHEIC(result, option?.heic),
-                encodeToAVIF(result, option?.avif)
+                encodeToAVIF(result, option?.avif),
+
+                globalThis.crossOriginIsolated ? encodeToHEIC(result, option?.heic): Promise.reject(new Error("heic encoding is possible only in crossOriginIsolated"))
             ]
         )
         const returnValue = {
             webp: batchResult[0],
-            heic: batchResult[1],
-            avif: batchResult[2],
+            avif: batchResult[1],
+            heic: batchResult[2],
         }
         let list: Transferable[] = batchResult.flatMap(item => {
             if (item.status === "fulfilled") {

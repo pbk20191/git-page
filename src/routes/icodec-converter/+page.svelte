@@ -91,7 +91,7 @@
         } finally {
             worker.terminate()
         }
-        if (errorArrays.length > 1) {
+        if (errorArrays.length > 0) {
             alert(JSON.stringify(errorArrays))
         }
     }
