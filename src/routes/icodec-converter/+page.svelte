@@ -116,18 +116,102 @@
     <meta name="description" content="Converter for heif" />
 </svelte:head>
 
-<div>  
-    <span>  상당히 느립니다.</span>
-    <label for="images">images</label>
-    <input
+<style>
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    font-family: system-ui, sans-serif;
+    font-size: 0.95rem;
+  }
+  .section {
+    padding: 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    background: #fafafa;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  details {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    padding: 0.6rem 0.8rem;
+  }
+  details + details { margin-top: 0.6rem; }
+  details summary {
+    cursor: pointer;
+    list-style: none;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  details summary::after {
+    content: "▸";
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+  }
+  details[open] summary::after { transform: rotate(90deg); }
+  .body { margin-top: 0.6rem; }
+  button {
+    padding: 0.5rem 0.9rem;
+    border: none;
+    border-radius: 6px;
+    background: #2d7ef7;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+</style>
+
+<div class="container">
+  <!-- 경고 -->
+  <div class="section">⚠️ 상당히 느립니다.</div>
+
+  <!-- 업로드 -->
+  <div class="section">
+    <div class="field">
+      <label for="images">images</label>
+      <input
         type="file"
         name="images"
         multiple
         accept="image/png, image/jpeg"
         onchange={handleMultipleFilesChange}
-    />
-    <Webp bind:value={store.webp} />
-    <Heic bind:value={store.heic}/>
-    <Avif bind:value={store.avif}/>
+      />
+    </div>
+  </div>
+
+  <!-- 포맷 섹션들: 접기만 -->
+  <div class="section">
+    <details>
+      <summary>WEBP</summary>
+      <div class="body">
+        <Webp bind:value={store.webp} />
+      </div>
+    </details>
+
+    <details>
+      <summary>HEIC</summary>
+      <div class="body">
+        <Heic bind:value={store.heic} />
+      </div>
+    </details>
+
+    <details>
+      <summary>AVIF</summary>
+      <div class="body">
+        <Avif bind:value={store.avif} />
+      </div>
+    </details>
+  </div>
+
+  <!-- 전역 저장 -->
+  <div class="section">
     <button onclick={onApply}>save config in local</button>
+  </div>
 </div>

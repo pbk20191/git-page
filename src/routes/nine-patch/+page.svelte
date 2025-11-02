@@ -71,30 +71,91 @@ function assetNameFromFile(fileName:string) { return fileName.replace(/\.9\.png$
        
     }
 </script>
-<div>
-    <label for="source_scale">source scale</label>
-    <input type="number" min=1 placeholder="" bind:value={sourceScale}/>
-    <label for="content_mode">content mode</label>
-    <select name="content_mode" bind:value={contentMode} >
-        <option value="stretch">stretch</option>
-        <option value="tile">tile</option>
-    </select>
-    <label for="translate_for_horizontalMode">convert to 3-part-horizontal slice if possible</label>
-    <input type="checkbox" bind:checked={translate_for_horizontalMode}/>
-    <label for="translate_for_verticalMode">convert to 3-part-vertical slice if possible</label>
-    <input name="translate_for_verticalMode" type="checkbox" bind:checked={translate_for_verticalMode}/>
-    <label for="images"> Android nine-patch source png</label>
+<style>
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+}
+
+/* 일반 입력 필드 */
+.container label {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.container input[type="number"],
+.container select,
+.container input[type="file"] {
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+}
+
+/* 체크박스 전용 행 */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* 설명 리스트 */
+.container ul {
+  margin-top: 0.5rem;
+  padding-left: 1.2rem;
+  color: #555;
+  font-size: 0.9rem;
+}
+</style>
+
+<div class="container">
+  <label for="source_scale">source scale</label>
+  <input type="number" min="1" bind:value={sourceScale} />
+
+  <label for="content_mode">content mode</label>
+  <select name="content_mode" bind:value={contentMode}>
+    <option value="stretch">stretch</option>
+    <option value="tile">tile</option>
+  </select>
+
+  <div class="checkbox-row">
     <input
-        type="file"
-        name="images"
-        accept=" .9.png"
-        onchange={fileHandle}
+      id="translate_for_horizontalMode"
+      type="checkbox"
+      bind:checked={translate_for_horizontalMode}
     />
-    <ua>
-        <li>requires valid .9.png format android nine-patch png file</li>
-        <li>content-padding and optical bind are ignored</li>
-        <li>only first stretch region is recognized</li>
-        <li> source png divided by source scale will be the 1x scale</li>
-        <li>mdpi -> 1x, xhdpi -> 2x, xxhdpi -> 3x, xxxxhdpi -> 4x</li>
-    </ua>
+    <label for="translate_for_horizontalMode">
+      convert to 3-part-horizontal slice if possible
+    </label>
+  </div>
+
+  <div class="checkbox-row">
+    <input
+      id="translate_for_verticalMode"
+      type="checkbox"
+      bind:checked={translate_for_verticalMode}
+    />
+    <label for="translate_for_verticalMode">
+      convert to 3-part-vertical slice if possible
+    </label>
+  </div>
+
+  <label for="images">Android nine-patch source png</label>
+  <input
+    type="file"
+    name="images"
+    accept=".9.png"
+    onchange={fileHandle}
+  />
+
+  <ul>
+    <li>requires valid .9.png format android nine-patch png file</li>
+    <li>content-padding and optical bind are ignored</li>
+    <li>only first stretch region is recognized</li>
+    <li>source png divided by source scale will be the 1x scale</li>
+    <li>mdpi → 1x, xhdpi → 2x, xxhdpi → 3x, xxxhdpi → 4x</li>
+  </ul>
 </div>
