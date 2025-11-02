@@ -17,57 +17,65 @@ function assetNameFromFile(fileName:string) { return fileName.replace(/\.9\.png$
         if (!files || files.length < 1) {
             return
         }
-        const file = files[0]
-        const outputName = assetNameFromFile(file.name)
-        const decodedResult = await createImageBitmap(file).then((bitmap) => {
-            let canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
-            
-            let context = canvas.getContext("2d", { willReadFrequently: true })!
-            
-            context.drawImage(bitmap, 0, 0)
-            let imageData = context.getImageData(0,0, canvas.width, canvas.height)
-            let patchInfo = readNinePathFromData(imageData)
-            if (patchInfo) {
-                let contentImage = context.getImageData(1,1, canvas.width - 1, canvas.height - 1)
+        const zip = new JSZip();
+        async function _convert(file:File) {
+            const outputName = assetNameFromFile(file.name)
+            const decodedResult = await createImageBitmap(file).then((bitmap) => {
+                let canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+                
+                let context = canvas.getContext("2d", { willReadFrequently: true })!
+                
+                context.drawImage(bitmap, 0, 0)
+                let imageData = context.getImageData(0,0, canvas.width, canvas.height)
+                let patchInfo = readNinePathFromData(imageData)
+                if (patchInfo) {
+                    let contentImage = context.getImageData(1,1, canvas.width - 1, canvas.height - 1)
+                    bitmap.close()
+                    return {contentImage, patchInfo}
+                }
                 bitmap.close()
-                return {contentImage, patchInfo}
+                return undefined
+            })
+            if (decodedResult) {
+                let jsonFile = generateXcodeNinePatchJson(
+                    outputName, decodedResult.patchInfo, sourceScale, contentMode, translate_for_horizontalMode, translate_for_verticalMode
+                )
+                console.log(jsonFile)
+                const [w,h] = [decodedResult.contentImage.width/sourceScale, decodedResult.contentImage.height/sourceScale]
+                const canvas = new OffscreenCanvas(w * 3, h * 3)
+                const original_bitmap = await createImageBitmap(decodedResult.contentImage)
+                
+                let context = canvas.getContext("2d")!
+                context.drawImage(original_bitmap, 0,0, w*3,h*3)
+                
+                let scaledImagex3 = await canvas.convertToBlob({ type:"image/png"})
+                canvas.width = w * 2
+                canvas.height = h * 2
+                context = canvas.getContext("2d")!
+                context.drawImage(original_bitmap, 0,0, w*2,h*2)
+                let scaledImagex2 = await canvas.convertToBlob({ type:"image/png"})
+                canvas.width = w
+                canvas.height = h
+                context = canvas.getContext("2d")!
+                context.drawImage(original_bitmap, 0,0, w, h)
+                let scaledImagex1 = await canvas.convertToBlob({ type : "image/png"})
+                original_bitmap.close()
+
+                let folder = zip.folder(`${outputName}.imageset`)!
+                folder.file(`${outputName}@3x.png`, scaledImagex3)
+                folder.file(`${outputName}@2x.png`, scaledImagex2)
+                folder.file(`${outputName}@1x.png`, scaledImagex1)
+                folder.file('Contents.json', JSON.stringify(jsonFile))
+
             }
-            bitmap.close()
-            return undefined
+        } 
+        let list = Array.from(files).map((file) => {
+   
+            return _convert(file)
         })
-        if (decodedResult) {
-            let jsonFile = generateXcodeNinePatchJson(
-                outputName, decodedResult.patchInfo, sourceScale, contentMode, translate_for_horizontalMode, translate_for_verticalMode
-            )
-            console.log(jsonFile)
-            const [w,h] = [decodedResult.contentImage.width/sourceScale, decodedResult.contentImage.height/sourceScale]
-            const canvas = new OffscreenCanvas(w * 3, h * 3)
-            const original_bitmap = await createImageBitmap(decodedResult.contentImage)
-            
-            let context = canvas.getContext("2d")!
-            context.drawImage(original_bitmap, 0,0, w*3,h*3)
-            
-            let scaledImagex3 = await canvas.convertToBlob({ type:"image/png"})
-            canvas.width = w * 2
-            canvas.height = h * 2
-            context = canvas.getContext("2d")!
-            context.drawImage(original_bitmap, 0,0, w*2,h*2)
-            let scaledImagex2 = await canvas.convertToBlob({ type:"image/png"})
-            canvas.width = w
-            canvas.height = h
-            context = canvas.getContext("2d")!
-            context.drawImage(original_bitmap, 0,0, w, h)
-            let scaledImagex1 = await canvas.convertToBlob({ type : "image/png"})
-            original_bitmap.close()
-            const zip = new JSZip();
-            let folder = zip.folder(`${outputName}.imageset`)!
-            folder.file(`${outputName}@3x.png`, scaledImagex3)
-            folder.file(`${outputName}@2x.png`, scaledImagex2)
-            folder.file(`${outputName}@1x.png`, scaledImagex1)
-            folder.file('Contents.json', JSON.stringify(jsonFile))
-            const out = await zip.generateAsync({ type: 'blob' });
-            saveAs(out, `NinePatch-imagesets.zip`);
-        }
+        await Promise.all(list)
+        const out = await zip.generateAsync({ type: 'blob' });
+        saveAs(out, `NinePatch-imagesets.zip`);
        
     }
 </script>
@@ -147,6 +155,7 @@ function assetNameFromFile(fileName:string) { return fileName.replace(/\.9\.png$
   <input
     type="file"
     name="images"
+    multiple
     accept=".9.png"
     onchange={fileHandle}
   />
