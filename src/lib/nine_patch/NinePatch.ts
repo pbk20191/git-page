@@ -1,3 +1,59 @@
+import { version } from "jszip"
+
+export namespace XcodeAsset {
+    export interface VerticalInset {
+        top:number,
+        bottom:number
+    }
+    export interface HorizontalInset {
+        left:number,
+        right:number
+    }
+
+
+    export namespace NinePatch {
+         
+        export type CenterMode = 'tile' | 'stretch'
+        export type ResizingMode = '9-part' | '3-part-horizontal' | '3-part-vertical'
+
+ 
+        export interface VerticalResizingInfo {
+            mode:  '3-part-vertical'
+            center: {
+                mode:CenterMode,
+                height:number
+            }
+            "cap-insets":VerticalInset
+        }
+        export interface HorizontalResizingInfo {
+            mode: '3-part-horizontal'
+            center: {
+                mode:CenterMode,
+                width:number
+            },
+            "cap-insets":HorizontalInset
+        }
+        export interface NineResizingInfo {
+            mode:  '9-part'
+            center: {
+                mode: CenterMode,
+                width: number,
+                height: number
+            },
+            "cap-insets": HorizontalInset & VerticalInset
+        }
+
+        export type ResizingInfo = NineResizingInfo | VerticalResizingInfo | HorizontalResizingInfo
+        
+
+    }
+   
+}
+
+ type XcodeNinePatchCenterMode = XcodeAsset.NinePatch.CenterMode
+ type XcodeNinePatchSliceMode = XcodeAsset.NinePatch.ResizingMode
+
+
 
 export interface NinePatchInfo {
     sourceWidth: number;   // 전체 원본 (테두리 포함)
@@ -94,7 +150,7 @@ function _rightIsBlack(imageData:ImageData, iy:number) {
     return _isBlack(_rgbaPxAt(imageData, [imageData.width - 1, iy + 1]).rgba)
 }
 
-export class NinePatchParser {
+class NinePatchParser {
     _trimmedCanvas: OffscreenCanvas;
     _stretch: { l: number, r: number, t: number, b: number };
     _content: { l: number, r: number, t: number, b: number };
@@ -284,9 +340,158 @@ export class NinePatchParser {
     }
 }
 
+function toXcodeResizing(
+        source_1x:NinePatchInfo,
+        scale: 1 | 2 | 3,
+        centerMode:XcodeNinePatchCenterMode
+    ): XcodeAsset.NinePatch.ResizingInfo|null {
+    
+    const [
+        w,h
+    ] = [
+        source_1x.innerWidth, source_1x.innerHeight
+    ]
+    if (source_1x.stretchX.length > 0 && source_1x.stretchY.length > 0) {
+        const xRange = source_1x.stretchX[0]
+        const yRange = source_1x.stretchY[0]
+        const [left_inset, right_inset] = [xRange[0] * scale, (w - xRange[1]) * scale] 
+        const [top_inset, bottom_inset] = [yRange[0] * scale, (h - yRange[1]) * scale]
+        const value:XcodeAsset.NinePatch.NineResizingInfo = {
+            "cap-insets": {
+                left:left_inset,
+                right:right_inset,
+                bottom: bottom_inset,
+                top:top_inset
+            },
+            center: {
+                mode:centerMode,
+                width: w * scale - left_inset - right_inset,
+                height: h  * scale - top_inset - bottom_inset
+            },
+            mode:"9-part",
+        }
+        return value
+    } else if (source_1x.stretchX.length > 0) {
+        const xRange = source_1x.stretchX[0]
+         const [left_inset, right_inset] = [xRange[0] * scale, (w - xRange[1]) * scale] 
+                 const value:XcodeAsset.NinePatch.HorizontalResizingInfo = {
+            "cap-insets": {
+                left:left_inset,
+                right:right_inset,
+            },
+            center: {
+                mode:centerMode,
+                width: w * scale - left_inset - right_inset
+            },
+            mode:"3-part-horizontal",
+        }
+        return value
+    } else if (source_1x.stretchY.length > 0) {
+        const yRange = source_1x.stretchY[0]
+        const [top_inset, bottom_inset] = [yRange[0] * scale, (h - yRange[1]) * scale] 
+        const value:XcodeAsset.NinePatch.VerticalResizingInfo = {
+            "cap-insets": {
+                top:top_inset,
+                bottom:bottom_inset
+            },
+            center: {
+                mode:centerMode,
+                height: h * scale - top_inset - bottom_inset
+            },
+            mode:"3-part-vertical",
+        }
+        return value
+    } else {
+        return null
+    }
+}
 
+function _preprocess_ninepatchInfo(
+    source:NinePatchInfo,
+    sourceScale:number,
+    would_tranlsate_to_horizontal_slice:boolean,
+    would_tranlsate_to_vertical_slice:boolean
+):NinePatchInfo {
+    console.log("_preprocess_ninepatchInfo" ,"before", source)
+    let newValue = {
+        ...source
+    }
+    if (newValue.stretchX.length > 0) {
+        if (would_tranlsate_to_vertical_slice && newValue.stretchX[0][0] == 0 && newValue.stretchX[0][1] == source.innerWidth) {
+            newValue.stretchX = []
+        } else {
+            newValue.stretchX = [newValue.stretchX[0]]
+        }
+    }
+    if (newValue.stretchY.length > 0) {
+        if (would_tranlsate_to_horizontal_slice && newValue.stretchY[0][0] == 0 && newValue.stretchY[0][1] == source.innerHeight) {
+            newValue.stretchY = []
+        } else {
+            newValue.stretchY = [newValue.stretchY[0]]
+        }
+    }
+    newValue = structuredClone(newValue)
+    newValue.innerHeight /= sourceScale
+    newValue.innerWidth /= sourceScale
+    newValue.sourceHeight = newValue.innerHeight + 2
+    newValue.sourceWidth = newValue.innerWidth + 2
+    newValue.stretchX.forEach((xValue) => {
+        xValue[0] /= sourceScale
+        xValue[1] /= sourceScale
+    })
+    newValue.stretchY.forEach((yValue) => {
+        yValue[0] /= sourceScale
+        yValue[1] /= sourceScale
+    })
+    newValue.content.top /= sourceScale
+    newValue.content.bottom /= sourceScale
+    newValue.content.left /= sourceScale
+    newValue.content.right /= sourceScale
+    console.log("_preprocess_ninepatchInfo" ,"after", newValue)
+    return newValue
+}
 
-
+export function generateXcodeNinePatchJson(
+    name:string,
+    info:NinePatchInfo,
+    sourceScale:number, 
+    contentMode:XcodeNinePatchCenterMode = 'stretch',
+    would_tranlsate_to_horizontal_slice:boolean = true,
+    would_tranlsate_to_vertical_slice:boolean = true,
+) {
+    const processed_info = _preprocess_ninepatchInfo(info, sourceScale, would_tranlsate_to_horizontal_slice, would_tranlsate_to_vertical_slice)
+    const res1x = toXcodeResizing(processed_info, 1, contentMode)
+    const res2x = toXcodeResizing(processed_info, 2, contentMode)
+    const res3x = toXcodeResizing(processed_info, 3, contentMode)
+    console.log(processed_info, res1x, res2x, res3x)
+    const contents = {
+        images: [
+            {
+                filename: `${name}@1x.png`, 
+                idiom: 'universal',
+                scale: '1x',
+                resizing: res1x !== null ? res1x : undefined
+            },
+            {
+                filename: `${name}@2x.png`, 
+                idiom: 'universal',
+                scale: '2x',
+                resizing: res2x !== null ? res2x : undefined
+            },
+            {
+                filename: `${name}@3x.png`, 
+                idiom: 'universal',
+                scale: '3x',
+                resizing: res3x !== null ? res3x : undefined
+            }
+        ],
+        info: {
+            version: 1,
+            author: 'pbk'
+        }
+    }
+    return contents
+}
 
 export function readNinePathFromData(imageData: ImageData): NinePatchInfo | null {
   const w = imageData.width;
