@@ -120,40 +120,41 @@ function assetNameFromFile(fileName:string) { return fileName.replace(/\.9\.png$
 </style>
 
 <div class="container">
-  <label for="source_scale">source scale</label>
-  <input type="number" min="1" bind:value={sourceScale} />
+  <label for="nine_patch_source_scale">source scale</label>
+  <input id="nine_patch_source_scale" type="number" min="1" bind:value={sourceScale} />
 
-  <label for="content_mode">content mode</label>
-  <select name="content_mode" bind:value={contentMode}>
+  <label for="nine_patch_content_mode">content mode</label>
+  <select id="nine_patch_content_mode" bind:value={contentMode}>
     <option value="stretch">stretch</option>
     <option value="tile">tile</option>
   </select>
 
   <div class="checkbox-row">
     <input
-      id="translate_for_horizontalMode"
+      id="nine_patch_translate_for_horizontalMode"
       type="checkbox"
       bind:checked={translate_for_horizontalMode}
     />
-    <label for="translate_for_horizontalMode">
+    <label for="nine_patch_translate_for_horizontalMode">
       convert to 3-part-horizontal slice if possible
     </label>
   </div>
 
   <div class="checkbox-row">
     <input
-      id="translate_for_verticalMode"
+      id="nine_patch_translate_for_verticalMode"
       type="checkbox"
       bind:checked={translate_for_verticalMode}
     />
-    <label for="translate_for_verticalMode">
+    <label for="nine_patch_translate_for_verticalMode">
       convert to 3-part-vertical slice if possible
     </label>
   </div>
 
-  <label for="images">Android nine-patch source png</label>
+  <label for="nine_patch_images">Android nine-patch source png</label>
   <input
     type="file"
+    id="nine_patch_images"
     name="images"
     multiple
     accept=".9.png"
