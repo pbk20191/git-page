@@ -71,11 +71,18 @@
             top: Math.round(st.canvasH * 0.2),
             bottom: Math.round(st.canvasH * 0.2),
         };
-
+        previewSize.h = st.canvasH
+        previewSize.w = st.canvasW
         await wp.setInsets($state.snapshot(insets), "right", "bottom");
-        // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
-        // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+        await renderPreview()
 
+    }
+
+    async function renderPreview() {
+        if (!workerProxy)
+            return
+        let bitmap = await workerProxy!.createBitmap(canvasPreview.width, canvasPreview.height)
+        canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
     }
 
     async function onScaleChange() {
@@ -89,8 +96,7 @@
         insets.bottom = Math.min(insets.bottom, st.canvasH - 1);
 
         await workerProxy.setInsets($state.snapshot(insets), "right", "bottom");
-        // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
-        // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+        await renderPreview()
 
     }
 
@@ -156,8 +162,7 @@
         }
 
         await workerProxy.setInsets($state.snapshot(insets));
-        // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
-        // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+        await renderPreview()
 
     }
 
@@ -203,8 +208,8 @@
         if (workerProxy) {
             workerProxy.setMode(mode, centerMode)
             .then(async () => {
-                // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
-                // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+                await renderPreview()
+
             })
         }
     });
@@ -237,10 +242,22 @@
             await workerProxy.setInsets({ top: insets.top }, "right", "bottom");
         }
         insets = (await workerProxy.getState()).insets;
-        // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
-        // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+        await renderPreview()
 
     }
+    $effect(() => {
+        let _w = previewSize.w
+        let _h = previewSize.h
+        if (!workerProxy)
+            return
+        workerProxy.getState().then(async () => {
+            await renderPreview()
+
+        })
+
+        // (async )()
+        
+    })
 </script>
 
 <main
@@ -381,9 +398,21 @@
                 />
             </label>
         </fieldset>
-        <!-- <canvas width={previewSize.w} height={previewSize.h} bind:this={canvasPreview}></canvas>
-        <label > Preview Width <input type="number" name="preview_width" bind:value={previewSize.w}/></label>
-        <label > Preview Height <input type="number" name="preview_height" bind:value={previewSize.h}/></label> -->
+
+    </section>
+    <section>
+        <h6>Preview</h6>
+        <fieldset style=" display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 8px 12px;">
+            <label > Preview Width <input type="number" name="preview_width" bind:value={previewSize.w}/></label>
+            <label > Preview Height <input type="number" name="preview_height" bind:value={previewSize.h}/></label>
+
+        </fieldset>
+        <canvas width={previewSize.w} height={previewSize.h} bind:this={canvasPreview}></canvas>
 
     </section>
 </main>

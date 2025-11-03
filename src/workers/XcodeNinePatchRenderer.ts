@@ -137,12 +137,12 @@ function render() {
   }
 
   // center region overlay (subtle)
-  const cx = st.insets.left;
-  const cy = st.insets.top;
-  const cw = Math.max(0, w - st.insets.left - st.insets.right);
-  const ch = Math.max(0, h - st.insets.top - st.insets.bottom);
-  ctx.fillStyle = 'rgba(0, 122, 255, 0.08)';
-  ctx.fillRect(cx, cy, cw, ch);
+  // const cx = st.insets.left;
+  // const cy = st.insets.top;
+  // const cw = Math.max(0, w - st.insets.left - st.insets.right);
+  // const ch = Math.max(0, h - st.insets.top - st.insets.bottom);
+  // ctx.fillStyle = 'rgba(0, 122, 255, 0.08)';
+  // ctx.fillRect(cx, cy, cw, ch);
 
   // mode labels
   ctx.fillStyle = '#000';
@@ -315,10 +315,10 @@ const module = {
 
 
   async createBitmap(
-    dw:number, dh:number
+    dw: number, dh: number
   ) {
-    let canvas = new OffscreenCanvas(dw,dh)
-    const ctx = canvas.getContext("2d", { alpha: true})!
+    let canvas = new OffscreenCanvas(dw, dh)
+    const ctx = canvas.getContext("2d", { alpha: true })!
     if (!st.img) {
       return null
     }
@@ -335,12 +335,15 @@ const module = {
     if (!st.img) {
       return Comlink.transfer(canvas, [canvas]);
     }
+    // 1x 기준 원본 크기
     const W1 = Math.max(1, Math.round(st.naturalW / st.scale));
     const H1 = Math.max(1, Math.round(st.naturalH / st.scale));
+
+    // 인셋(1x) + 모드 반영 + 클램프 (같음)
     let { left: L, right: R, top: T, bottom: B } = st.insets;
     if (st.mode === '3-part-horizontal') { T = 0; B = 0; }
     if (st.mode === '3-part-vertical') { L = 0; R = 0; }
-    // 클램프 + 센터 영역 보장
+
     L = Math.max(0, Math.min(L, W1 - 1));
     R = Math.max(0, Math.min(R, W1 - 1));
     T = Math.max(0, Math.min(T, H1 - 1));
@@ -348,24 +351,40 @@ const module = {
     if (L + R >= W1) R = Math.max(0, W1 - L - 1);
     if (T + B >= H1) B = Math.max(0, H1 - T - 1);
 
-    const CW1 = Math.max(0, W1 - L - R);
-    const CH1 = Math.max(0, H1 - T - B);
+    // ✅ 대상 인셋 두께는 “고정(1x 단위 그대로)”로 사용한다.
+    //    - 단, 대상이 너무 작을 때는 잘리지 않게 최소한으로 줄여서 채운다.
+    let Ld = Math.min(L, Math.max(0, dw));
+    let Rd = Math.min(R, Math.max(0, dw - Ld));
+    let Td = Math.min(T, Math.max(0, dh));
+    let Bd = Math.min(B, Math.max(0, dh - Td));
 
-    // 3) 소스 픽셀 좌표(자연 픽셀)
+    // 중앙 영역(대상)
+    let CWd = Math.max(0, dw - Ld - Rd);
+    let CHd = Math.max(0, dh - Td - Bd);
+
+    // 부동소수 반올림 누적 오차 보정(틈 방지)
+    if (Ld + CWd + Rd !== dw) {
+      Rd = Math.max(0, dw - Ld - CWd);
+    }
+    if (Td + CHd + Bd !== dh) {
+      Bd = Math.max(0, dh - Td - CHd);
+    }
+
+    // 소스 픽셀 좌표 (같음)
     const s = st.scale;
     const SL = L * s, SR = R * s, ST = T * s, SB = B * s;
-    const SCW = CW1 * s, SCH = CH1 * s; // center source size
     const SWn = st.naturalW, SHn = st.naturalH;
+    const SCW = Math.max(0, (W1 - L - R) * s);
+    const SCH = Math.max(0, (H1 - T - B) * s);
+    // console.log({
+    //   dx, dy, dw, dh,
+    //   W1, H1,
+    //   L, R, T,B, 
+    //   Ld, Rd, Td, Bd,
+    //   CWd, CHd,
+    //   s, SL, SR, ST, SB, SWn, SHn, SCW, SCH
+    // })
 
-    // 4) 대상 사각형 내에서의 두께(픽셀)
-    //    1x→대상 비율: dw/W1, dh/H1
-    const kx = dw / W1, ky = dh / H1;
-    const Ld = Math.round(L * kx);
-    const Rd = Math.round(R * kx);
-    const Td = Math.round(T * ky);
-    const Bd = Math.round(B * ky);
-    const CWd = Math.max(0, dw - Ld - Rd);
-    const CHd = Math.max(0, dh - Td - Bd);
     const draw = (
       sx: number, sy: number, sw: number, sh: number,
       x: number, y: number, w: number, h: number
@@ -384,33 +403,37 @@ const module = {
     draw(SWn - SR, SHn - SB, SR, SB, dw - Rd, dh - Bd, Rd, Bd);
 
     // ── 엣지 4개 (모드에 따라 스킵)
-// 상단 중앙 띠  → horizontal 모드에서는 그리지 않음
-if (Td > 0 && CWd > 0 && st.mode !== '3-part-horizontal') {
-  draw(SL, 0, SCW, ST, Ld, 0, CWd, Td);
-}
+    // 상단 중앙 띠  → horizontal 모드에서는 그리지 않음
+    if (Td > 0 && CWd > 0 && st.mode !== '3-part-horizontal') {
+      draw(SL, 0, SCW, ST, Ld, 0, CWd, Td);
+    }
 
-// 하단 중앙 띠  → horizontal 모드에서는 그리지 않음
-if (Bd > 0 && CWd > 0 && st.mode !== '3-part-horizontal') {
-  draw(SL, SHn - SB, SCW, SB, Ld, dh - Bd, CWd, Bd);
-}
+    // // 하단 중앙 띠  → horizontal 모드에서는 그리지 않음
+    if (Bd > 0 && CWd > 0 && st.mode !== '3-part-horizontal') {
+      draw(SL, SHn - SB, SCW, SB, Ld, dh - Bd, CWd, Bd);
+    }
 
-// 좌측 중앙 띠  → vertical 모드에서는 그리지 않음
-if (Ld > 0 && CHd > 0 && st.mode !== '3-part-vertical') {
-  draw(0, ST, SL, SCH, 0, Td, Ld, CHd);
-}
+    // // 좌측 중앙 띠  → vertical 모드에서는 그리지 않음
+    if (Ld > 0 && CHd > 0 && st.mode !== '3-part-vertical') {
+      draw(0, ST, SL, SCH, 0, Td, Ld, CHd);
+    }
 
-// 우측 중앙 띠  → vertical 모드에서는 그리지 않음
-if (Rd > 0 && CHd > 0 && st.mode !== '3-part-vertical') {
-  draw(SWn - SR, ST, SR, SCH, dw - Rd, Td, Rd, CHd);
-}
+    // // 우측 중앙 띠  → vertical 모드에서는 그리지 않음
+    if (Rd > 0 && CHd > 0 && st.mode !== '3-part-vertical') {
+      draw(SWn - SR, ST, SR, SCH, dw - Rd, Td, Rd, CHd);
+    }
     // ── 중앙
-    if (CWd > 0 && CHd > 0) {
+    if ( CWd > 0 && CHd > 0) {
       if (st.centerMode === 'stretch') {
         // 중앙 소스 영역을 대상 중앙 전체로 스트레치
         draw(SL, ST, SCW, SCH, Ld, Td, CWd, CHd);
       } else {
         // tile: 한 타일을 대상 비율에 맞게 리샘플링 후 패턴 반복
         // 타일 크기(대상 공간): 1x center 크기 × 스케일비
+        const CW1 = Math.max(0, W1 - L - R);
+        const CH1 = Math.max(0, H1 - T - B);
+        const kx = dw / W1, ky = dh / H1;
+
         const tileW = Math.max(1, Math.round(CW1 * kx));
         const tileH = Math.max(1, Math.round(CH1 * ky));
 
