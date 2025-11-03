@@ -28,6 +28,7 @@ function assetNameFromFile(fileName:string) { return fileName.replace(/\.9\.png$
                 context.drawImage(bitmap, 0, 0)
                 let imageData = context.getImageData(0,0, canvas.width, canvas.height)
                 let patchInfo = readNinePathFromData(imageData)
+                console.log(patchInfo)
                 if (patchInfo) {
                     let contentImage = context.getImageData(1,1, canvas.width - 1, canvas.height - 1)
                     bitmap.close()
