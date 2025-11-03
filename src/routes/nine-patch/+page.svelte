@@ -78,6 +78,40 @@ function assetNameFromFile(fileName:string) { return fileName.replace(/\.9\.png$
         saveAs(out, `NinePatch-imagesets.zip`);
        
     }
+
+    const tooltip = {
+      translate_for_horizontalMode:`
+      transform nine-patch images into 3-part-horizontal resizing if the nine-patch region is like below
+
+      ----------------
+      |       |          |     |
+      |       |          |     |
+      |       |          |     |
+      |       |          |     |
+      |       |          |     |
+      |       |          |     |
+      ----------------
+      `,
+      translate_for_verticalMode: `
+      transform nine-patch images into 3-part-vertical resizing if the nine-patch region is like below
+      ----------------
+      |                         |
+      |                         |
+      ----------------
+      |                         |
+      |                         |
+      ----------------
+      |                         |
+      |                         |
+      ----------------
+      `,
+      nine_patch_source_scale:`
+      pick 1 for mdpi
+      pick 2 for xhdpi
+      pick 3 for xxhdpi
+      pick 4 for xxxhdpi
+      `
+    }
 </script>
 <style>
 .container {
@@ -120,8 +154,8 @@ function assetNameFromFile(fileName:string) { return fileName.replace(/\.9\.png$
 </style>
 
 <div class="container">
-  <label for="nine_patch_source_scale">source scale</label>
-  <input id="nine_patch_source_scale" type="number" min="1" bind:value={sourceScale} />
+  <label for="nine_patch_source_scale" title={tooltip.nine_patch_source_scale}>source scale</label>
+  <input  id="nine_patch_source_scale" type="number" min="1" bind:value={sourceScale} />
 
   <label for="nine_patch_content_mode">content mode</label>
   <select id="nine_patch_content_mode" bind:value={contentMode}>
@@ -129,7 +163,7 @@ function assetNameFromFile(fileName:string) { return fileName.replace(/\.9\.png$
     <option value="tile">tile</option>
   </select>
 
-  <div class="checkbox-row">
+  <div class="checkbox-row" title={tooltip.translate_for_horizontalMode}>
     <input
       id="nine_patch_translate_for_horizontalMode"
       type="checkbox"
@@ -140,7 +174,7 @@ function assetNameFromFile(fileName:string) { return fileName.replace(/\.9\.png$
     </label>
   </div>
 
-  <div class="checkbox-row">
+  <div class="checkbox-row" title={tooltip.translate_for_verticalMode}>
     <input
       id="nine_patch_translate_for_verticalMode"
       type="checkbox"
