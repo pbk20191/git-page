@@ -385,76 +385,68 @@ const module = {
     //   s, SL, SR, ST, SB, SWn, SHn, SCW, SCH
     // })
 
-    const draw = (
+    const draw_stretch = (
       sx: number, sy: number, sw: number, sh: number,
       x: number, y: number, w: number, h: number
     ) => {
       if (sw <= 0 || sh <= 0 || w <= 0 || h <= 0) return;
       ctx.drawImage(st.img!, sx, sy, sw, sh, dx + x, dy + y, w, h);
     };
-    // ── 코너 4개
-    // 좌상
-    draw(0, 0, SL, ST, 0, 0, Ld, Td);
-    // 우상
-    draw(SWn - SR, 0, SR, ST, dw - Rd, 0, Rd, Td);
-    // 좌하
-    draw(0, SHn - SB, SL, SB, 0, dh - Bd, Ld, Bd);
-    // 우하
-    draw(SWn - SR, SHn - SB, SR, SB, dw - Rd, dh - Bd, Rd, Bd);
 
-    // ── 엣지 4개 (모드에 따라 스킵)
-    // 상단 중앙 띠  → horizontal 모드에서는 그리지 않음
-    if (Td > 0 && CWd > 0 && st.mode !== '3-part-horizontal') {
-      draw(SL, 0, SCW, ST, Ld, 0, CWd, Td);
-    }
-
-    // // 하단 중앙 띠  → horizontal 모드에서는 그리지 않음
-    if (Bd > 0 && CWd > 0 && st.mode !== '3-part-horizontal') {
-      draw(SL, SHn - SB, SCW, SB, Ld, dh - Bd, CWd, Bd);
-    }
-
-    // // 좌측 중앙 띠  → vertical 모드에서는 그리지 않음
-    if (Ld > 0 && CHd > 0 && st.mode !== '3-part-vertical') {
-      draw(0, ST, SL, SCH, 0, Td, Ld, CHd);
-    }
-
-    // // 우측 중앙 띠  → vertical 모드에서는 그리지 않음
-    if (Rd > 0 && CHd > 0 && st.mode !== '3-part-vertical') {
-      draw(SWn - SR, ST, SR, SCH, dw - Rd, Td, Rd, CHd);
-    }
-    // ── 중앙
-    if ( CWd > 0 && CHd > 0) {
-      if (st.centerMode === 'stretch') {
-        // 중앙 소스 영역을 대상 중앙 전체로 스트레치
-        draw(SL, ST, SCW, SCH, Ld, Td, CWd, CHd);
-      } else {
-        // tile: 한 타일을 대상 비율에 맞게 리샘플링 후 패턴 반복
-        // 타일 크기(대상 공간): 1x center 크기 × 스케일비
-        const CW1 = Math.max(0, W1 - L - R);
-        const CH1 = Math.max(0, H1 - T - B);
-        const kx = dw / W1, ky = dh / H1;
-
-        const tileW = Math.max(1, Math.round(CW1 * kx));
-        const tileH = Math.max(1, Math.round(CH1 * ky));
-
-        // 타일 캔버스
-        const tile = new OffscreenCanvas(tileW, tileH);
+    const draw_tile = (
+      sx: number, sy: number, sw: number, sh: number,
+      x: number, y: number, w: number, h: number
+    ) => {
+        const tile = new OffscreenCanvas(sw / st.scale, sh / st.scale);
         const tctx = tile.getContext('2d', { alpha: true })!;
         tctx.imageSmoothingEnabled = true;
         tctx.imageSmoothingQuality = 'high';
         // 소스(center) → 타일로 스케일
-        tctx.drawImage(st.img!, SL, ST, SCW, SCH, 0, 0, tileW, tileH);
+        tctx.drawImage(st.img!, sx, sy, sw, sh, 0, 0, tile.width, tile.height);
 
         const pattern = ctx.createPattern(tile, 'repeat');
         if (pattern) {
           ctx.save();
-          ctx.translate(dx + Ld, dy + Td);
+          ctx.translate(dx + x, dy + y);
           // OffscreenCanvas pattern은 기본 원점(0,0)부터 반복 → 중앙 사각형만 채움
           ctx.fillStyle = pattern;
-          ctx.fillRect(0, 0, CWd, CHd);
+          ctx.fillRect(0, 0, w, h);
           ctx.restore();
         }
-      }
+    }
+    // ── 코너 4개
+    // 좌상
+    draw_stretch(0, 0, SL, ST, 0, 0, Ld, Td);
+    // 우상
+    draw_stretch(SWn - SR, 0, SR, ST, dw - Rd, 0, Rd, Td);
+    // 좌하
+    draw_stretch(0, SHn - SB, SL, SB, 0, dh - Bd, Ld, Bd);
+    // 우하
+    draw_stretch(SWn - SR, SHn - SB, SR, SB, dw - Rd, dh - Bd, Rd, Bd);
+    let _render = st.centerMode === 'tile' ? draw_tile : draw_stretch
+    // ── 엣지 4개 (모드에 따라 스킵)
+    // 상단 중앙 띠  → horizontal 모드에서는 그리지 않음
+    if (Td > 0 && CWd > 0 && st.mode !== '3-part-horizontal') {
+      _render(SL, 0, SCW, ST, Ld, 0, CWd, Td);
+    }
+
+    // // 하단 중앙 띠  → horizontal 모드에서는 그리지 않음
+    if (Bd > 0 && CWd > 0 && st.mode !== '3-part-horizontal') {
+      _render(SL, SHn - SB, SCW, SB, Ld, dh - Bd, CWd, Bd);
+    }
+
+    // // 좌측 중앙 띠  → vertical 모드에서는 그리지 않음
+    if (Ld > 0 && CHd > 0 && st.mode !== '3-part-vertical') {
+      _render(0, ST, SL, SCH, 0, Td, Ld, CHd);
+    }
+
+    // // 우측 중앙 띠  → vertical 모드에서는 그리지 않음
+    if (Rd > 0 && CHd > 0 && st.mode !== '3-part-vertical') {
+      _render(SWn - SR, ST, SR, SCH, dw - Rd, Td, Rd, CHd);
+    }
+    // ── 중앙
+    if ( CWd > 0 && CHd > 0) {
+      _render(SL, ST, SCW, SCH, Ld, Td, CWd, CHd)
     }
     return Comlink.transfer(canvas, [canvas])
   }
