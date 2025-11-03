@@ -127,25 +127,25 @@
   <div class="grid">
     <div>
       <div class="row" title={tooltip.quality}>
-        <label>Quality <span class="muted">{value.quality}</span></label>
+        <label for="avif-quality">Quality <span class="muted">{value.quality}</span></label>
       </div>
       <div class="row">
-        <input type="range" min="0" max="100" bind:value={value.quality} />
+        <input id="avif-quality" type="range" min="0" max="100" bind:value={value.quality} />
       </div>
 
       <div class="row" title={tooltip.qualityAlpha}>
-        <label>Quality Alpha <span class="muted">{value.qualityAlpha}</span></label>
-        <input class="num" type="number" min="-1" max="100" bind:value={value.qualityAlpha} />
+        <label for="avif-qualityAlpha">Quality Alpha <span class="muted">{value.qualityAlpha}</span></label>
+        <input  id="avif-qualityAlpha" class="num" type="number" min="-1" max="100" bind:value={value.qualityAlpha} />
       </div>
 
       <div class="row" title={tooltip.speed}>
-        <label>Speed <span class="muted">{value.speed}</span></label>
-        <input type="range" min="-1" max="10" bind:value={value.speed} />
+        <label for="avif-speed">Speed <span class="muted">{value.speed}</span></label>
+        <input id="avif-speed" type="range" min="-1" max="10" bind:value={value.speed} />
       </div>
 
       <div class="row" title={tooltip.subsample}>
-        <label>Subsample</label>
-        <select bind:value={value.subsample} >
+        <label for="avif-subsample">Subsample</label>
+        <select id="avif-subsample" bind:value={value.subsample} >
           {#each subsampleEntries as e}
             <option value={e.v}>{e.label}</option>
           {/each}
@@ -153,38 +153,38 @@
       </div>
 
       <div class="row" title={tooltip.autoTiling}>
-        <label><input type="checkbox" bind:checked={value.autoTiling}  /> Auto Tiling</label>
+        <label><input name="avif-autoTiling" type="checkbox" bind:checked={value.autoTiling}  /> Auto Tiling</label>
       </div>
 
       <div class="row" title={tooltip.tileColsLog2}>
-        <label>TileRows (log2) <span class="muted">{value.tileRowsLog2}</span></label>
-        <input type="range" min="0" max="6" bind:value={value.tileRowsLog2} />
+        <label for="avif-tileRowsLog2">TileRows (log2) <span class="muted">{value.tileRowsLog2}</span></label>
+        <input id="avif-tileRowsLog2" type="range" min="0" max="6" bind:value={value.tileRowsLog2} />
       </div>
 
       <div class="row"  title={tooltip.tileColsLog2}>
-        <label>TileCols (log2) <span class="muted">{value.tileColsLog2}</span></label>
-        <input type="range" min="0" max="6" bind:value={value.tileColsLog2} />
+        <label for="avif-tileColsLog2">TileCols (log2) <span class="muted">{value.tileColsLog2}</span></label>
+        <input id="avif-tileColsLog2" type="range" min="0" max="6" bind:value={value.tileColsLog2} />
       </div>
     </div>
 
     <div>
       <div class="row"  title={tooltip.chromaDeltaQ}>
-        <label><input type="checkbox" bind:checked={value.chromaDeltaQ} /> Chroma Delta Q</label>
+        <label><input name="avif-chromaDeltaQ" type="checkbox" bind:checked={value.chromaDeltaQ} /> Chroma Delta Q</label>
       </div>
 
       <div class="row"  title={tooltip.sharpness}>
-        <label>Sharpness <span class="muted">{value.sharpness}</span></label>
-        <input type="range" min="0" max="7" bind:value={value.sharpness} />
+        <label for="avif-sharpness">Sharpness <span class="muted">{value.sharpness}</span></label>
+        <input id="avif-sharpness" type="range" min="0" max="7" bind:value={value.sharpness} />
       </div>
 
       <div class="row"  title={tooltip.denoiseLevel}>
-        <label>Denoise Level <span class="muted">{value.denoiseLevel}</span></label>
-        <input type="range" min="0" max="50" bind:value={value.denoiseLevel}  />
+        <label for="avif-denoiseLevel">Denoise Level <span class="muted">{value.denoiseLevel}</span></label>
+        <input id="avif-denoiseLevel" type="range" min="0" max="50" bind:value={value.denoiseLevel}  />
       </div>
 
       <div class="row"  title={tooltip.tune}>
-        <label>Tune</label>
-        <select bind:value={value.tune}>
+        <label for="avif-tune">Tune</label>
+        <select id="avif-tune" bind:value={value.tune}>
           {#each tuneEntries as t}
             <option value={t.v}>{t.label}</option>
           {/each}
@@ -192,11 +192,11 @@
       </div>
 
       <div class="row"  title={tooltip.sharpYUV}>
-        <label><input type="checkbox" bind:checked={value.sharpYUV}  /> Sharp YUV</label>
+        <label><input name="avif-sharpYUV" type="checkbox" bind:checked={value.sharpYUV}  /> Sharp YUV</label>
       </div>
 
       <div class="actions">
-        <button type="button" on:click={resetDefaults}>Reset</button>
+        <button type="button" onclick={resetDefaults}>Reset</button>
       </div>
     </div>
   </div>

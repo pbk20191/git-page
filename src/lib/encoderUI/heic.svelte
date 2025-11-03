@@ -103,19 +103,19 @@
   <div class="grid">
     <div>
       <div class="row">
-        <label title={tooltip.quality}>Quality <span class="muted">{value.quality ?? 50}</span></label>
+        <label for="heic-quality" title={tooltip.quality}>Quality <span class="muted">{value.quality ?? 50}</span></label>
       </div>
       <div class="row">
-        <input type="range" min="0" max="100" bind:value={value.quality} />
-      </div>
-
-      <div class="row">
-        <label title={tooltip.lossless}><input type="checkbox" bind:checked={value.lossless}/> Lossless</label>
+        <input id="heic-quality" type="range" min="0" max="100" bind:value={value.quality} />
       </div>
 
       <div class="row">
-        <label title={tooltip.preset} >Preset</label>
-        <select bind:value={value.preset}>
+        <label title={tooltip.lossless}><input name="heic-lossless" type="checkbox" bind:checked={value.lossless}/> Lossless</label>
+      </div>
+
+      <div class="row">
+        <label for="heic-preset" title={tooltip.preset} >Preset</label>
+        <select id="heic-preset" bind:value={value.preset}>
           {#each heic.Presets as p}
             <option value={p}>{p}</option>
           {/each}
@@ -123,8 +123,8 @@
       </div>
 
       <div class="row">
-        <label title={tooltip.tune} >Tune</label>
-        <select bind:value={value.tune} >
+        <label for="heic-tune" title={tooltip.tune} >Tune</label>
+        <select id="heic-tune" bind:value={value.tune} >
           {#each heic.Tune as t}
             <option value={t}>{t}</option>
           {/each}
@@ -132,24 +132,24 @@
       </div>
 
       <div class="row">
-        <label title={tooltip.tuIntraDepth} >TU Intra Depth <span class="muted">{value.tuIntraDepth}</span></label>
+        <label for="heic-tuIntraDepth" title={tooltip.tuIntraDepth} >TU Intra Depth <span class="muted">{value.tuIntraDepth}</span></label>
       </div>
       <div class="row">
-        <input type="range" min="1" max="4" bind:value={value.tuIntraDepth} />
+        <input id="heic-tuIntraDepth" type="range" min="1" max="4" bind:value={value.tuIntraDepth} />
       </div>
     </div>
 
     <div>
       <div class="row">
-        <label title={tooltip.complexity}>Complexity <span class="muted">{value.complexity}</span></label>
+        <label for="heic-complexity" title={tooltip.complexity}>Complexity <span class="muted">{value.complexity}</span></label>
       </div>
       <div class="row">
-        <input type="range" min="0" max="100" bind:value={value.complexity} />
+        <input id="heic-complexity" type="range" min="0" max="100" bind:value={value.complexity} />
       </div>
 
       <div class="row">
-        <label title={tooltip.chroma}>Chroma</label>
-        <select bind:value={value.chroma} >
+        <label for="heic-chroma" title={tooltip.chroma}>Chroma</label>
+        <select id="heic-chroma" bind:value={value.chroma} >
           {#each heic.Subsampling as s}
             <option value={s}>{s}</option>
           {/each}
@@ -157,11 +157,11 @@
       </div>
 
       <div class="row">
-        <label title={tooltip.sharpYUV}><input type="checkbox" bind:checked={value.sharpYUV} /> Sharp YUV</label>
+        <label title={tooltip.sharpYUV}><input name="heic-sharpYUV" type="checkbox" bind:checked={value.sharpYUV} /> Sharp YUV</label>
       </div>
 
       <div class="row">
-        <button on:click={resetDefaults}>Reset</button>
+        <button onclick={resetDefaults}>Reset</button>
       </div>
 
 

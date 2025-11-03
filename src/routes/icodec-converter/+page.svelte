@@ -175,10 +175,10 @@
   <!-- 업로드 -->
   <div class="section">
     <div class="field">
-      <label for="images">images</label>
+      <label for="icodec-images">images</label>
       <input
         type="file"
-        name="images"
+        id="icodec-images"
         multiple
         accept="image/png, image/jpeg"
         onchange={handleMultipleFilesChange}

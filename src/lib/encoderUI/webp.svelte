@@ -239,31 +239,33 @@
 
         <div class="row">
             <label title={tooltip.lossless}
-                ><input type="checkbox" bind:checked={value.lossless} /> Lossless</label
+                ><input name="webp-lossless" type="checkbox" bind:checked={value.lossless} /> Lossless</label
             >
             <span class="muted"> (may change transparent pixels)</span>
         </div>
 
         <div class="row">
             <div style="flex:1" title={tooltip.nearLossless}>
-                <label class="small"
+                <label for="webp-nearLossless" class="small"
                     >nearLossless: <span class="muted"
                         >{value.nearLossless}</span
                     ></label
                 >
                 <input
                     type="range"
+                    id="webp-nearLossless"
                     min="0"
                     max="100"
                     bind:value={value.nearLossless}
                 />
             </div>
             <div style="width:120px" title={tooltip.quality}>
-                <label class="small">quality</label>
+                <label for="webp-quality" class="small">quality</label>
                 <input
                     class="num"
                     type="number"
                     min="0"
+                    id="webp-quality"
                     max="100"
                     bind:value={value.quality}
                 />
@@ -273,21 +275,24 @@
         <div class="row">
             <div style="flex:1" title={tooltip.alphaQuality}>
                 <label class="small"
+                    for="webp-alphaQuality"
                     >alphaQuality: <span class="muted"
                         >{value.alphaQuality}</span
                     ></label
                 >
                 <input
                     type="range"
+                    id="webp-alphaQuality"
                     min="0"
                     max="100"
                     bind:value={value.alphaQuality}
                 />
             </div>
             <div style="width:120px" title={tooltip.method}>
-                <label class="small">method</label>
+                <label for="webp-method" class="small">method</label>
                 <input
                     class="num"
+                    id="webp-method"
                     type="number"
                     min="0"
                     max="6"
@@ -297,9 +302,10 @@
         </div>
 
         <div class="row" title={tooltip.snsStrength}>
-            <label class="small">snsStrength: {value.snsStrength}</label>
+            <label for="webp-snsStrength" class="small">snsStrength: {value.snsStrength}</label>
             <input
                 type="range"
+                id="webp-snsStrength"
                 min="0"
                 max="100"
                 bind:value={value.snsStrength}
@@ -307,9 +313,10 @@
         </div>
 
         <div class="row" title={tooltip.filterStrength}>
-            <label class="small">filterStrength: {value.filterStrength}</label>
+            <label for="webp-filterStrength" class="small">filterStrength: {value.filterStrength}</label>
             <input
                 type="range"
+                id="webp-filterStrength"
                 min="0"
                 max="100"
                 bind:value={value.filterStrength}
@@ -318,11 +325,12 @@
 
         <div class="row two">
             <div style="flex:1" title={tooltip.filterSharpness}>
-                <label class="small"
+                <label for="webp-filterSharpness" class="small"
                     >filterSharpness: {value.filterSharpness}</label
                 >
                 <input
                     type="range"
+                    id="webp-filterSharpness"
                     min="0"
                     max="7"
                     bind:value={value.filterSharpness}
@@ -330,21 +338,21 @@
             </div>
             <div style="width:160px" title={tooltip.filterType}>
                 <label
-                    ><input type="checkbox" bind:checked={value.filterType} /> filterType
+                    ><input name="webp-filterType" type="checkbox" bind:checked={value.filterType} /> filterType
                     (strong)</label
                 >
             </div>
         </div>
 
         <div class="row" title={tooltip.segments}>
-            <label class="small">segments: {value.segments}</label>
-            <input type="range" min="1" max="4" bind:value={value.segments} />
+            <label for="webp-segments" class="small">segments: {value.segments}</label>
+            <input id="webp-segments" type="range" min="1" max="4" bind:value={value.segments} />
         </div>
 
         <div class="row two">
             <div style="flex:1" title={tooltip.preprocessing}>
-                <label>preprocessing</label>
-                <select bind:value={value.preprocessing}>
+                <label for="webp-preprocessing">preprocessing</label>
+                <select id="webp-preprocessing" bind:value={value.preprocessing}>
                     {#each preprocessEntries as e}
                         <option value={e.v}>{e.label}</option>
                     {/each}
@@ -352,27 +360,29 @@
             </div>
             <div style="width:160px" title={tooltip.autofilter}>
                 <label
-                    ><input type="checkbox" bind:checked={value.autofilter} /> autofilter</label
+                    ><input name="webp-autofilter" type="checkbox" bind:checked={value.autofilter} /> autofilter</label
                 >
             </div>
         </div>
 
         <div class="row two">
             <div style="flex:1" title={tooltip.partitionLimit}>
-                <label class="small"
+                <label for="webp-partitionLimit" class="small"
                     >partitionLimit: {value.partitionLimit}</label
                 >
                 <input
                     type="range"
+                    id="webp-partitionLimit"
                     min="0"
                     max="100"
                     bind:value={value.partitionLimit}
                 />
             </div>
             <div style="width:160px" title={tooltip.pass}>
-                <label class="small">pass: {value.pass}</label>
+                <label for="webp-pass" class="small">pass: {value.pass}</label>
                 <input
                     class="num"
+                    id="webp-pass"
                     type="number"
                     min="1"
                     max="10"
@@ -383,15 +393,15 @@
 
         <div class="row two">
             <div title={tooltip.alphaCompression}>
-                <label>alphaCompression</label>
-                <select bind:value={value.alphaCompression}>
+                <label for="webp-alphaCompression">alphaCompression</label>
+                <select id="webp-alphaCompression" bind:value={value.alphaCompression}>
                     <option value={0}>0 (none)</option>
                     <option value={1}>1 (webp lossless)</option>
                 </select>
             </div>
             <div title={tooltip.alphaFiltering}>
-                <label>alphaFiltering</label>
-                <select bind:value={value.alphaFiltering}>
+                <label for="webp-alphaFiltering">alphaFiltering</label>
+                <select id="webp-alphaFiltering" bind:value={value.alphaFiltering}>
                     {#each alphaFilteringEntries as a}
                         <option value={a.v}>{a.label}</option>
                     {/each}
@@ -401,23 +411,24 @@
 
         <div class="row">
             <label title={tooltip.sharpYUV}
-                ><input type="checkbox" bind:checked={value.sharpYUV} /> sharpYUV</label
+                ><input name="webp-sharpYUV" type="checkbox" bind:checked={value.sharpYUV} /> sharpYUV</label
             >
             <label style="margin-left:12px" title={tooltip.exact}
-                ><input type="checkbox" bind:checked={value.exact} /> exact (preserve
+                ><input name="webp-exact" type="checkbox" bind:checked={value.exact} /> exact (preserve
                 RGB in transparent)</label
             >
         </div>
 
         <div class="row two">
             <div style="flex:1" title={tooltip.targetSize}>
-                <label>targetSize (bytes)</label>
-                <input type="number" min="0" bind:value={value.targetSize} />
+                <label for="webp-targetSize">targetSize (bytes)</label>
+                <input id="webp-targetSize" type="number" min="0" bind:value={value.targetSize} />
             </div>
             <div style="width:160px" title={tooltip.targetPSNR}>
-                <label>targetPSNR (dB)</label>
+                <label for="webp-targetPSNR">targetPSNR (dB)</label>
                 <input
                     class="num"
+                    id="webp-targetPSNR"
                     type="number"
                     min="0"
                     bind:value={value.targetPSNR}
@@ -428,12 +439,13 @@
         <div class="row two">
             <div>
                 <label title={tooltip.lowMemory}
-                    ><input type="checkbox" bind:checked={value.lowMemory} /> lowMemory</label
+                    ><input name="webp-lowMemory" type="checkbox" bind:checked={value.lowMemory} /> lowMemory</label
                 >
             </div>
             <div>
                 <label title={tooltip.emulateJpegSize}
                     ><input
+                        name="webp-emulateJpegSize"
                         type="checkbox"
                         bind:checked={value.emulateJpegSize}
                     /> emulateJpegSize</label
@@ -442,7 +454,7 @@
         </div>
 
         <div class="actions">
-            <button type="button" on:click={resetDefaults}>Reset</button>
+            <button type="button" onclick={resetDefaults}>Reset</button>
         </div>
     </div>
 </div>
