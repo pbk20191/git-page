@@ -18,6 +18,8 @@
     let dragging = false as false | keyof typeof insets;
     let worker: Worker | null = null;
     let workerProxy: Comlink.Remote<XocdeNinePatchWorker> | null = null;
+    let canvasPreview:HTMLCanvasElement
+    let previewSize = $state({ w: 10, h: 10})
     onDestroy(() => {
         worker?.terminate();
         worker = null;
@@ -71,6 +73,9 @@
         };
 
         await wp.setInsets($state.snapshot(insets), "right", "bottom");
+        // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
+        // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+
     }
 
     async function onScaleChange() {
@@ -84,6 +89,9 @@
         insets.bottom = Math.min(insets.bottom, st.canvasH - 1);
 
         await workerProxy.setInsets($state.snapshot(insets), "right", "bottom");
+        // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
+        // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+
     }
 
     function canvasPoint(ev: MouseEvent) {
@@ -148,6 +156,9 @@
         }
 
         await workerProxy.setInsets($state.snapshot(insets));
+        // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
+        // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+
     }
 
     function onUp() {
@@ -187,20 +198,20 @@
     }
 
     $effect(() => {
+        let _1 = mode
+        let _2 = centerMode
         if (workerProxy) {
-            workerProxy.setMode(mode, centerMode);
+            workerProxy.setMode(mode, centerMode)
+            .then(async () => {
+                // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
+                // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+            })
         }
     });
     async function onChangeInsetByInput(
         event: Parameters<ChangeEventHandler<HTMLInputElement>>[0],
         mode: "left" | "right" | "top" | "bottom",
     ) {
-        console.log(
-            "onChangeInsetByInput",
-            insets.left,
-            event.currentTarget.value,
-            mode,
-        );
         if (!workerProxy) {
             return;
         }
@@ -226,6 +237,9 @@
             await workerProxy.setInsets({ top: insets.top }, "right", "bottom");
         }
         insets = (await workerProxy.getState()).insets;
+        // let bitmap = await workerProxy!.createBitmap(canvasEl.width, canvasEl.height)
+        // canvasPreview.getContext("bitmaprenderer")?.transferFromImageBitmap(bitmap)
+
     }
 </script>
 
@@ -292,7 +306,7 @@
             bind:this={canvasEl}
             width="1"
             height="1"
-            style="width: 100%; height: auto; image-rendering: crisp-edges; border: 1px solid #ddd; border-radius: 8px;"
+            style=" height: auto; image-rendering: crisp-edges; border: 1px solid #ddd; border-radius: 8px;"
             onmousedown={onDown}
             onmousemove={onMove}
             onmouseup={onUp}
@@ -367,5 +381,9 @@
                 />
             </label>
         </fieldset>
+        <!-- <canvas width={previewSize.w} height={previewSize.h} bind:this={canvasPreview}></canvas>
+        <label > Preview Width <input type="number" name="preview_width" bind:value={previewSize.w}/></label>
+        <label > Preview Height <input type="number" name="preview_height" bind:value={previewSize.h}/></label> -->
+
     </section>
 </main>
