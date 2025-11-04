@@ -2,7 +2,7 @@
     import * as Comlink from "comlink";
     import WORKER_URL from "$workers/XcodeNinePatchRenderer?worker&url";
     import type { XocdeNinePatchWorker } from "$workers/XcodeNinePatchRenderer";
-    import { onDestroy } from "svelte";
+    import { onDestroy, tick } from "svelte";
     import JSZip from "jszip";
     import { saveAs } from "file-saver";
     let canvasEl: HTMLCanvasElement;
@@ -20,6 +20,18 @@
     let workerProxy: Comlink.Remote<XocdeNinePatchWorker> | null = null;
     let canvasPreview:HTMLCanvasElement
     let previewSize = $state({ w: 10, h: 10})
+    let zoom = $state(1.0); // 확대 배율
+    let minZoom = 0.5;
+    let maxZoom = 8.0;
+
+      function onWheel(e: WheelEvent) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    zoom = Math.min(maxZoom, Math.max(minZoom, zoom + delta));
+        console.log("adasdfasdf", e, zoom)
+
+  }
+
     onDestroy(() => {
         worker?.terminate();
         worker = null;
@@ -73,9 +85,14 @@
         };
         previewSize.h = st.canvasH
         previewSize.w = st.canvasW
+
         await wp.setInsets($state.snapshot(insets), "right", "bottom");
         await renderPreview()
-
+        // console.log("zoom file",zoom, canvasEl.width, canvasEl.height)
+        const zoom_value = zoom
+        zoom = 0.1
+        await tick()
+        zoom = zoom_value
     }
 
     async function renderPreview() {
@@ -258,6 +275,24 @@
         // (async )()
         
     })
+
+    let canvasWidth = $derived.by(() => {
+        let value = zoom
+        if (canvasEl) {
+            return canvasEl.width * value
+        } else {
+            return 1
+        }
+    })
+    let canvasHeight = $derived.by(() => {
+        let value = zoom
+        if (canvasEl) {
+            // console.log(canvasEl, value)
+            return canvasEl.height * value
+        } else {
+            return 1
+        }
+    })
 </script>
 
 <main
@@ -282,7 +317,9 @@
                 onchange={onFile}
             />
         </label>
-
+    <span>
+        You can zoom the image using mouse wheel over image
+    </span>
         <div style="display:flex; gap:12px; flex-wrap:wrap;">
             <label>
                 Source Scale
@@ -321,19 +358,26 @@
     <section>
         <canvas
             bind:this={canvasEl}
+
             width="1"
             height="1"
-            style=" height: auto; image-rendering: crisp-edges; border: 1px solid #ddd; border-radius: 8px;"
+            onwheel={onWheel}
+            style="image-rendering: crisp-edges; border: 1px solid #ddd; border-radius: 8px;"
+            style:width="{canvasWidth}px"
+            style:height="{canvasHeight}px"
+
             onmousedown={onDown}
             onmousemove={onMove}
             onmouseup={onUp}
             onmouseleave={onUp}
+            
         ></canvas>
+
 
         <div
             style="margin-top:8px; font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;"
         >
-            insets: {validInsetDescription()}
+            1x based insets: {validInsetDescription()}
         </div>
 
         <fieldset

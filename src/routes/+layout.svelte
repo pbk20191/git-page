@@ -6,7 +6,7 @@
 	let { children } = $props();
 	onMount(() => {
 		if (navigator.serviceWorker) {
-			console.log("123123123")
+			// console.log("123123123")
 		}
 	})
 </script>
