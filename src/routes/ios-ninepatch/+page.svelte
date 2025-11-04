@@ -317,7 +317,9 @@
                 onchange={onFile}
             />
         </label>
-
+    <span>
+        You can zoom the image using mouse wheel over image
+    </span>
         <div style="display:flex; gap:12px; flex-wrap:wrap;">
             <label>
                 Source Scale
@@ -375,7 +377,7 @@
         <div
             style="margin-top:8px; font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;"
         >
-            insets: {validInsetDescription()}
+            1x based insets: {validInsetDescription()}
         </div>
 
         <fieldset
