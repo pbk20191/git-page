@@ -39,6 +39,10 @@
       store = JSON.parse(value);
     }
   });
+  	let _crossOriginIsolated = $state(false)
+	onMount(() => {
+		_crossOriginIsolated = window.crossOriginIsolated
+	})
   async function processFiles(iterator: FileIterator) {
     // if (!files.length) return;
     let worker = new Worker(ICODEC, { type: "module" });
@@ -276,6 +280,13 @@
       ⚠️ This is pretty slow
     {/if}
   </div>
+    
+    {#if !_crossOriginIsolated}
+    <div class="section">
+      crossOriginIsolation not validated, HEIC encoding won't work, plz refresh the page
+      </div>
+    {/if}
+  
 
   <div
     class="drop-zone"

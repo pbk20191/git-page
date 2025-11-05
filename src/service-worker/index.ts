@@ -6,7 +6,7 @@
 
 // https://kit.svelte.dev/docs/service-workers#type-safety
 const sw = self as unknown as ServiceWorkerGlobalScope;
-
+// see also https://github.com/josephrocca/clip-image-sorter/blob/main/enable-threads.js
 import { build, files, version } from '$service-worker';
 
 const CACHE = `aj-cache-${version}`;
