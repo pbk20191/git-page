@@ -10,6 +10,7 @@
   import Avif, { type AvifOption } from "$lib/encoderUI/avif.svelte";
   import { avif, heic, webp } from "icodec";
   import { writable } from "svelte/store";
+  type ICodecWorker = Comlink.Remote<typeof import("$workers/icodecs")>;
   type FileIterator = AsyncGenerator<
     {
       fullPath: string;
@@ -22,6 +23,7 @@
 </script>
 
 <script lang="ts">
+  let processing = $state(false);
   let store = $state({
     webp: { ...webp.defaultOptions },
     avif: { ...avif.defaultOptions },
@@ -39,14 +41,24 @@
   });
   async function processFiles(iterator: FileIterator) {
     // if (!files.length) return;
-    const worker = new Worker(ICODEC, { type: "module" });
+    let worker = new Worker(ICODEC, { type: "module" });
+    const CONCURRENCY = 4;
+    const total_workers = [] as Worker[];
+    total_workers.push(worker);
+    const idle_interfaces = [] as ICodecWorker[];
+    idle_interfaces.push(Comlink.wrap(worker));
+    const pending_queue = [] as {
+      id: number;
+      promise: Promise<{ idx: number; worker: ICodecWorker }>;
+    }[];
+
     const pool = Comlink.wrap<typeof import("$workers/icodecs")>(worker);
     const zip = new JSZip();
     const heicFolder = zip.folder("heic");
     const webpFolder = zip.folder("webp");
     const avifFolder = zip.folder("avif");
     let errorArrays = [] as {
-      type: "avif" | "webp" | "heic";
+      type?: "avif" | "webp" | "heic";
       reason: any;
       fileName: string;
     }[];
@@ -54,49 +66,91 @@
 
     try {
       for await (const item of iterator) {
-        let file = item.file;
         jobs += 1;
-        let bitmap = await createImageBitmap(file);
-        const result = await pool.encodeBitmap(
-          Comlink.transfer(bitmap, [bitmap]),
-          $state.snapshot(store),
-        );
+        const job_id = jobs;
+        if (pending_queue.length >= CONCURRENCY) {
+          const idleWorker = await Promise.race(
+            pending_queue.map((x) => x.promise),
+          );
 
-        const outputName = item.fullPath.replace(/\.[^/.]+$/, "");
-        console.log(outputName, result)
-        if (result.avif.status === "fulfilled") {
-          avifFolder?.file(outputName + ".avif", result.avif.value);
-        } else {
-          console.error(result.avif.reason);
-          errorArrays.push({
-            type: "avif",
-            reason: result.avif.reason,
-            fileName: item.fullPath,
-          });
+          const fastestPending = pending_queue.findIndex(
+            (x) => x.id === idleWorker.idx,
+          );
+          if (fastestPending != -1) {
+            pending_queue.splice(fastestPending, 1);
+          }
+          idle_interfaces.push(idleWorker.worker);
+        } else if (
+          pending_queue.length < CONCURRENCY &&
+          idle_interfaces.length === 0
+        ) {
+          worker = new Worker(ICODEC, { type: "module" });
+          total_workers.push(worker);
+          idle_interfaces.push(Comlink.wrap(worker));
         }
-        if (result.heic.status === "fulfilled") {
-          heicFolder?.file(outputName + ".heic", result.heic.value);
-        } else {
-          console.error(result.heic.reason);
-          errorArrays.push({
-            type: "heic",
-            reason: result.heic.reason,
-            fileName: item.fullPath,
-          });
-        }
-        if (result.webp.status === "fulfilled") {
-          webpFolder?.file(outputName + ".webp", result.webp.value);
-        } else {
-          console.error(result.webp.reason);
-          errorArrays.push({
-            type: "webp",
-            reason: result.webp.reason,
-            fileName: item.fullPath,
-          });
-        }
+        let workerProxy = idle_interfaces.pop()!;
+        const job = Promise.try(async () => {
+          let file = item.file;
+
+          try {
+            let bitmap = await createImageBitmap(file);
+            const result = await workerProxy.encodeBitmap(
+              Comlink.transfer(bitmap, [bitmap]),
+              $state.snapshot(store),
+            );
+
+            const outputName = item.fullPath.replace(/\.[^/.]+$/, "");
+            if (result.avif.status === "fulfilled") {
+              avifFolder?.file(outputName + ".avif", result.avif.value);
+            } else {
+              console.error(result.avif.reason);
+              errorArrays.push({
+                type: "avif",
+                reason: result.avif.reason,
+                fileName: item.fullPath,
+              });
+            }
+            if (result.heic.status === "fulfilled") {
+              heicFolder?.file(outputName + ".heic", result.heic.value);
+            } else {
+              console.error(result.heic.reason);
+              errorArrays.push({
+                type: "heic",
+                reason: result.heic.reason,
+                fileName: item.fullPath,
+              });
+            }
+            if (result.webp.status === "fulfilled") {
+              webpFolder?.file(outputName + ".webp", result.webp.value);
+            } else {
+              console.error(result.webp.reason);
+              errorArrays.push({
+                type: "webp",
+                reason: result.webp.reason,
+                fileName: item.fullPath,
+              });
+            }
+          } catch (error) {
+            console.error(error);
+            errorArrays.push({
+              reason: error,
+              fileName: item.fullPath,
+            });
+          }
+
+          return { idx: job_id, worker: workerProxy };
+        });
+        pending_queue.push({
+          id: job_id,
+          promise: job,
+        });
       }
+      await Promise.allSettled(pending_queue.map((x) => x.promise));
     } finally {
-      worker.terminate();
+      for (const worker of total_workers) {
+        worker.terminate();
+      }
+      // worker.terminate();
     }
     if (jobs != 0) {
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -117,14 +171,18 @@
       for (const file of files) {
         yield {
           file,
-          fullPath: file.name
-        }
+          fullPath: file.name,
+        };
       }
-    })()
-    await processFiles(iterator);
-  }
+    })();
+    try {
+      processing = true;
 
-  let a = $state({ ...avif.defaultOptions });
+      await processFiles(iterator);
+    } finally {
+      processing = false;
+    }
+  }
 
   function onApply(e: MouseEvent) {
     window.localStorage.setItem(
@@ -134,6 +192,7 @@
   }
   function dragover(e: DragEvent) {
     if (
+      !processing &&
       e.dataTransfer?.dropEffect === "copy" &&
       e.dataTransfer.types.length > 0 &&
       e.dataTransfer.types[0] === "Files"
@@ -146,11 +205,11 @@
     if (!itemList || itemList.length == 0) {
       return;
     }
-    e.preventDefault();
-    console.log("filedrop", itemList.length);
-    for (let item in itemList) {
-      itemList;
+    if (processing) {
+      return;
     }
+    e.preventDefault();
+
     let dirEntries = [] as FileSystemDirectoryEntry[];
     const asyncIterator = (async function* () {
       for (let i = 0; i < itemList.length; i++) {
@@ -188,10 +247,18 @@
         const prop = await new Promise<File>((resolve, reject) => {
           value.file(resolve, reject);
         });
-        yield { fullPath:  value.fullPath.substring(1), file: prop };
+        if (!prop.type.startsWith("image/")) {
+          continue;
+        }
+        yield { fullPath: value.fullPath.substring(1), file: prop };
       }
     })();
-    await processFiles(asyncIterator2)
+    processing = true;
+    try {
+      await processFiles(asyncIterator2);
+    } finally {
+      processing = false;
+    }
   }
 </script>
 
@@ -202,7 +269,14 @@
 
 <div class="container">
   <!-- 경고 -->
-  <div class="section">⚠️ 상당히 느립니다.</div>
+  <div class="section">
+    {#if processing}
+      Processing
+    {:else}
+      ⚠️ This is pretty slow
+    {/if}
+  </div>
+
   <div
     class="drop-zone"
     role="region"
@@ -215,6 +289,7 @@
     <div class="field">
       <label for="icodec-images">images</label>
       <input
+        disabled={processing}
         type="file"
         id="icodec-images"
         multiple
@@ -250,7 +325,8 @@
 
   <!-- 전역 저장 -->
   <div class="section">
-    <button onclick={onApply}>save config in local</button>
+    <button disabled={processing} onclick={onApply}>save config in local</button
+    >
   </div>
 </div>
 
