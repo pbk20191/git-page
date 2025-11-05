@@ -36,6 +36,9 @@
 			<li aria-current={page.url.pathname === base + "/ios-ninepatch" ? "page" : undefined}>
 				<a href="{base}/ios-ninepatch">ios-ninepatch</a>
 			</li>
+			<la >
+				<a href="https://romannurik.github.io/AndroidAssetStudio/nine-patches.html#&sourceDensity=480&name=example">android-nine-patch-studio</a>
+			</la>
 		</ul>
 		<svg viewBox="0 0 2 3" aria-hidden="true">
 			<path d="M0,0 L0,3 C0.5,3 0.5,3 1,2 L2,0 Z" />
