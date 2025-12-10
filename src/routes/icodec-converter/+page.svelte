@@ -196,9 +196,7 @@
   }
   function dragover(e: DragEvent) {
     if (
-      !processing &&
-      e.dataTransfer?.dropEffect === "copy" &&
-      e.dataTransfer.types.length > 0 &&
+      !processing && e.dataTransfer && e.dataTransfer.types.length > 0 &&
       e.dataTransfer.types[0] === "Files"
     ) {
       e.preventDefault();
