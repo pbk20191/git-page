@@ -238,6 +238,9 @@ const module = {
         center: { mode: st.centerMode, width: centerW - 1 },
         'cap-insets': { left: cap.left * targetScale, right: cap.right * targetScale }
       } as XcodeAsset.NinePatch.HorizontalResizingInfo;
+      if (prop.center.width < 0) {
+        prop.center.width = 0;
+      }
       return prop;
     }
     if (st.mode === '3-part-vertical') {
@@ -246,6 +249,9 @@ const module = {
         center: { mode: st.centerMode, height: centerH - 1 },
         'cap-insets': { top: cap.top * targetScale, bottom: cap.bottom * targetScale }
       } as XcodeAsset.NinePatch.VerticalResizingInfo;
+      if (prop.center.height < 0) {
+        prop.center.height = 0;
+      }
       return prop;
     }
     const prop = {
@@ -253,6 +259,12 @@ const module = {
       center: { mode: st.centerMode, width: centerW - 1, height: centerH - 1 },
       'cap-insets': { left: cap.left * targetScale, right: cap.right * targetScale, top: cap.top * targetScale, bottom: cap.bottom * targetScale }
     } as XcodeAsset.NinePatch.NineResizingInfo;
+    if (prop.center.height < 0) {
+      prop.center.height = 0;
+    }
+    if (prop.center.width < 0) {
+      prop.center.width = 0;
+    }
     return prop;
   },
 
