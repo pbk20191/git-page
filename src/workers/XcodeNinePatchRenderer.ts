@@ -232,24 +232,28 @@ const module = {
     const centerH = Math.max(0, h1 - cap.top * targetScale - cap.bottom * targetScale);
 
     if (st.mode === '3-part-horizontal') {
-      return {
+
+      const prop =  {
         mode: '3-part-horizontal',
-        center: { mode: st.centerMode, width: centerW },
+        center: { mode: st.centerMode, width: centerW - 1 },
         'cap-insets': { left: cap.left * targetScale, right: cap.right * targetScale }
       } as XcodeAsset.NinePatch.HorizontalResizingInfo;
+      return prop;
     }
     if (st.mode === '3-part-vertical') {
-      return {
+      const prop = {
         mode: '3-part-vertical',
-        center: { mode: st.centerMode, height: centerH },
+        center: { mode: st.centerMode, height: centerH - 1 },
         'cap-insets': { top: cap.top * targetScale, bottom: cap.bottom * targetScale }
       } as XcodeAsset.NinePatch.VerticalResizingInfo;
+      return prop;
     }
-    return {
+    const prop = {
       mode: '9-part',
-      center: { mode: st.centerMode, width: centerW, height: centerH },
+      center: { mode: st.centerMode, width: centerW - 1, height: centerH - 1 },
       'cap-insets': { left: cap.left * targetScale, right: cap.right * targetScale, top: cap.top * targetScale, bottom: cap.bottom * targetScale }
     } as XcodeAsset.NinePatch.NineResizingInfo;
+    return prop;
   },
 
   async exportAsset(name: string) {
