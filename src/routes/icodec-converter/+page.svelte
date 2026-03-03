@@ -58,9 +58,10 @@
 
     const pool = Comlink.wrap<typeof import("$workers/icodecs")>(worker);
     const zip = new JSZip();
-    const heicFolder = zip.folder("heic");
-    const webpFolder = zip.folder("webp");
-    const avifFolder = zip.folder("avif");
+    // const heicFolder = zip.folder("heic");
+    // const webpFolder = zip.folder("webp");
+    // const avifFolder = zip.folder("avif");
+    // const rootFolder = zip.folder("root");
     let errorArrays = [] as {
       type?: "avif" | "webp" | "heic";
       reason: any;
@@ -104,8 +105,16 @@
             );
 
             const outputName = item.fullPath.replace(/\.[^/.]+$/, "");
+            const components = outputName.split("/");
+            // path to parent folder of outputName
+            const folderPath = components.slice(0, -1).join("/");
+            const fileBaseName = components[components.length - 1];
+            console.log({ fileBaseName, folderPath, outputName, components });
             if (result.avif.status === "fulfilled") {
-              avifFolder?.file(outputName + ".avif", result.avif.value);
+              zip.file(
+                `${folderPath}/avif/${fileBaseName}.avif`,
+                result.avif.value,
+              );
             } else {
               console.error(result.avif.reason);
               errorArrays.push({
@@ -115,7 +124,10 @@
               });
             }
             if (result.heic.status === "fulfilled") {
-              heicFolder?.file(outputName + ".heic", result.heic.value);
+              zip.file(
+                `${folderPath}/heic/${fileBaseName}.heic`,
+                result.heic.value,
+              );
             } else {
               console.error(result.heic.reason);
               errorArrays.push({
@@ -125,7 +137,10 @@
               });
             }
             if (result.webp.status === "fulfilled") {
-              webpFolder?.file(outputName + ".webp", result.webp.value);
+              zip.file(
+                `${folderPath}/webp/${fileBaseName}.webp`,
+                result.webp.value,
+              );
             } else {
               console.error(result.webp.reason);
               errorArrays.push({
