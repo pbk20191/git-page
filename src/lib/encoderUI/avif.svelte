@@ -1,5 +1,5 @@
 <script module lang="ts">
-    import { avif, type ImageDataLike } from "icodec";
+    import { avif, type ImageDataLike } from "@pbk20191/icodec";
 
     export type AvifOption = avif.Options;
 </script>

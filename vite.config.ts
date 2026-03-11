@@ -6,7 +6,7 @@ export default defineConfig({
 	optimizeDeps: {
 		exclude: [
 			 "../dist/heic-enc.js",  "../dist/heic-dec.js",
-			 "elheif", "icodec"
+			 "elheif", "@pbk20191/icodec"
 		]
 	},
 	worker: {

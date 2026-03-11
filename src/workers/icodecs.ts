@@ -5,14 +5,14 @@
 
 // https://kit.svelte.dev/docs/service-workers#type-safety
 const self = globalThis.self as unknown as DedicatedWorkerGlobalScope;
-import { heic, webp, avif, type ImageDataLike } from "icodec"
+import { heic, webp, avif, type ImageDataLike } from "@pbk20191/icodec"
 import * as Comlink from "comlink"
 
-import AVIFEncWASM from "icodec/avif-enc.wasm?url";
-import HEIFEncWASM from "icodec/heic-enc.wasm?url";
-import WEBPEncWASM from "icodec/webp-enc.wasm?url";
+import AVIFEncWASM from "@pbk20191/icodec/avif-enc.wasm?url";
+import HEIFEncWASM from "@pbk20191/icodec/heic-enc.wasm?url";
+import WEBPEncWASM from "@pbk20191/icodec/webp-enc.wasm?url";
 
-export type * from "icodec"
+export type * from "@pbk20191/icodec"
 
 async function encodeToHEIC(
     image:ImageDataLike,
@@ -148,8 +148,8 @@ export async function encodeBitmap(
             [
                 encodeToWEPB(result, option?.webp),
                 encodeToAVIF(result, option?.avif),
-
-                globalThis.crossOriginIsolated ? encodeToHEIC(result, option?.heic): Promise.reject(new Error("heic encoding is possible only in crossOriginIsolated"))
+                encodeToHEIC(result, option?.heic),
+                // globalThis.crossOriginIsolated ? encodeToHEIC(result, option?.heic): Promise.reject(new Error("heic encoding is possible only in crossOriginIsolated"))
             ]
         )
         const returnValue = {

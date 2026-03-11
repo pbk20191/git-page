@@ -1,5 +1,5 @@
 <script module lang="ts">
-    import { heic, type ImageDataLike } from "icodec" 
+    import { heic, type ImageDataLike } from "@pbk20191/icodec" 
 
     export type HeicOption = heic.Options
 </script>

@@ -1,5 +1,5 @@
 <script module lang="ts">
-    import { webp, type ImageDataLike } from "icodec";
+    import { webp, type ImageDataLike } from "@pbk20191/icodec";
 
     export type WebpOption = webp.Options;
 </script>

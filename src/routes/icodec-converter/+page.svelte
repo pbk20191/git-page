@@ -4,11 +4,11 @@
   import ICODEC from "$workers/icodecs?worker&url";
   import JSZip from "jszip";
   import saveAs from "file-saver";
-  import "icodec";
+  import "@pbk20191/icodec";
   import Heic, { type HeicOption } from "$lib/encoderUI/heic.svelte";
   import Webp, { type WebpOption } from "$lib/encoderUI/webp.svelte";
   import Avif, { type AvifOption } from "$lib/encoderUI/avif.svelte";
-  import { avif, heic, webp } from "icodec";
+  import { avif, heic, webp } from "@pbk20191/icodec";
   import { writable } from "svelte/store";
   type ICodecWorker = Comlink.Remote<typeof import("$workers/icodecs")>;
   type FileIterator = AsyncGenerator<
@@ -46,7 +46,7 @@
   async function processFiles(iterator: FileIterator) {
     // if (!files.length) return;
     let worker = new Worker(ICODEC, { type: "module" });
-    const CONCURRENCY = 4;
+    const CONCURRENCY = navigator.hardwareConcurrency - 1 || 4;
     const total_workers = [] as Worker[];
     total_workers.push(worker);
     const idle_interfaces = [] as ICodecWorker[];
@@ -294,11 +294,11 @@
     {/if}
   </div>
     
-    {#if !_crossOriginIsolated}
+    <!-- {#if !_crossOriginIsolated}
     <div class="section">
       crossOriginIsolation not validated, HEIC encoding won't work, plz refresh the page
       </div>
-    {/if}
+    {/if} -->
   
 
   <div
