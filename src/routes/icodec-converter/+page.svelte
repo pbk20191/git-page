@@ -56,7 +56,6 @@
       promise: Promise<{ idx: number; worker: ICodecWorker }>;
     }[];
 
-    const pool = Comlink.wrap<typeof import("$workers/icodecs")>(worker);
     const zip = new JSZip();
     // const heicFolder = zip.folder("heic");
     // const webpFolder = zip.folder("webp");
@@ -229,6 +228,7 @@
 
     let dirEntries = [] as FileSystemDirectoryEntry[];
     const asyncIterator = (async function* () {
+      let buffer = [] as FileSystemFileEntry[];
       for (let i = 0; i < itemList.length; i++) {
         const item = itemList[i];
         const entry = item.webkitGetAsEntry();
@@ -236,9 +236,12 @@
           if (entry.isDirectory) {
             dirEntries.push(entry as FileSystemDirectoryEntry);
           } else if (entry.isFile) {
-            yield entry as FileSystemFileEntry;
+            buffer.push(entry as FileSystemFileEntry);
           }
         }
+      }
+      for (const fileEntry of buffer) {
+        yield fileEntry;
       }
       while (dirEntries.length > 0) {
         const entry2 = dirEntries.pop()!;
