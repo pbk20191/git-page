@@ -5,8 +5,8 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	optimizeDeps: {
 		exclude: [
-			 "../dist/heic-enc.js",  "../dist/heic-dec.js",
-			 "elheif", "@pbk20191/icodec"
+			//  "../dist/heic-enc.js",  "../dist/heic-dec.js",
+			 "elheif", //"@pbk20191/icodec"
 		]
 	},
 	worker: {
