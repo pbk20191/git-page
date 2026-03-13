@@ -123,51 +123,49 @@ export async function bitmapToWEBP(
 }
 
 export async function encodeBitmap(
-    bitmap: ImageBitmap,
+    file: File,
     option?: {
         webp?:webp.Options,
         avif?:avif.Options,
         heic?:heic.Options
     }
 ) {
-    try {
-        const canvas = new OffscreenCanvas(
-            bitmap.width, bitmap.height
-        )
-        const ctx = canvas.getContext("2d")!
-        ctx.drawImage(bitmap, 0,0)
-        const imageData = ctx.getImageData(0,0, bitmap.width, bitmap.height)
-        const result:ImageDataLike = {
-            width: imageData.width,
-            height: imageData.height,
-            depth: 8,
-            data: imageData.data
-        }
-        
-        let batchResult = await Promise.allSettled(
-            [
-                encodeToWEPB(result, option?.webp),
-                encodeToAVIF(result, option?.avif),
-                encodeToHEIC(result, option?.heic),
-                // globalThis.crossOriginIsolated ? encodeToHEIC(result, option?.heic): Promise.reject(new Error("heic encoding is possible only in crossOriginIsolated"))
-            ]
-        )
-        const returnValue = {
-            webp: batchResult[0],
-            avif: batchResult[1],
-            heic: batchResult[2],
-        }
-        let list: Transferable[] = batchResult.flatMap(item => {
-            if (item.status === "fulfilled") {
-                return [item.value.buffer]
-            } else {
-                return []
-            }
-        })
-        return Comlink.transfer(returnValue,list)
-    } finally {
-        bitmap.close()
+    const bitmap = await createImageBitmap(file)
+    const canvas = new OffscreenCanvas(
+        bitmap.width, bitmap.height
+    )
+    const ctx = canvas.getContext("2d")!
+    ctx.drawImage(bitmap, 0,0)
+    const imageData = ctx.getImageData(0,0, bitmap.width, bitmap.height, { pixelFormat: "rgba-unorm8"})
+    const result:ImageDataLike = {
+        width: imageData.width,
+        height: imageData.height,
+        depth: 8,
+        data: imageData.data
     }
+    bitmap.close()
+
+    let batchResult = await Promise.allSettled(
+        [
+            encodeToWEPB(result, option?.webp),
+            encodeToAVIF(result, option?.avif),
+            encodeToHEIC(result, option?.heic),
+            // globalThis.crossOriginIsolated ? encodeToHEIC(result, option?.heic): Promise.reject(new Error("heic encoding is possible only in crossOriginIsolated"))
+        ]
+    )
+    const returnValue = {
+        webp: batchResult[0],
+        avif: batchResult[1],
+        heic: batchResult[2],
+    }
+    let list: Transferable[] = batchResult.flatMap(item => {
+        if (item.status === "fulfilled") {
+            return [item.value.buffer]
+        } else {
+            return []
+        }
+    })
+    return Comlink.transfer(returnValue,list)
 }
 
 

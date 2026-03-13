@@ -97,9 +97,8 @@
           let file = item.file;
 
           try {
-            let bitmap = await createImageBitmap(file);
             const result = await workerProxy.encodeBitmap(
-              Comlink.transfer(bitmap, [bitmap]),
+              Comlink.transfer(file, []),
               $state.snapshot(store),
             );
 
