@@ -2,7 +2,7 @@
   import { onDestroy, onMount, untrack } from "svelte";
   import * as Comlink from "comlink";
   import ICODEC from "$workers/icodecs?worker&url";
-  import JSZip from "jszip";
+  import JSZip, { folder } from "jszip";
   import saveAs from "file-saver";
   import "@pbk20191/icodec";
   import Heic, { type HeicOption } from "$lib/encoderUI/heic.svelte";
@@ -135,12 +135,15 @@
             const outputName = item.fullPath.replace(/\.[^/.]+$/, "");
             const components = outputName.split("/");
             // path to parent folder of outputName
-            const folderPath = components.slice(0, -1).join("/");
+            let folderPath = components.slice(0, -1).join("/") + "/";
+            if (folderPath === '/') {
+              folderPath = "";
+            }
             const fileBaseName = components[components.length - 1];
             console.log({ fileBaseName, folderPath, outputName, components });
             if (result.avif.status === "fulfilled") {
               zip.file(
-                `${folderPath}/avif/${fileBaseName}.avif`,
+                `${folderPath}avif/${fileBaseName}.avif`,
                 result.avif.value,
               );
             } else {
@@ -153,7 +156,7 @@
             }
             if (result.heic.status === "fulfilled") {
               zip.file(
-                `${folderPath}/heic/${fileBaseName}.heic`,
+                `${folderPath}heic/${fileBaseName}.heic`,
                 result.heic.value,
               );
             } else {
@@ -166,7 +169,7 @@
             }
             if (result.webp.status === "fulfilled") {
               zip.file(
-                `${folderPath}/webp/${fileBaseName}.webp`,
+                `${folderPath}webp/${fileBaseName}.webp`,
                 result.webp.value,
               );
             } else {
