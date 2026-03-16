@@ -1,5 +1,5 @@
 <script module lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
   import * as Comlink from "comlink";
   import ICODEC from "$workers/icodecs?worker&url";
   import JSZip from "jszip";
@@ -10,6 +10,8 @@
   import Avif, { type AvifOption } from "$lib/encoderUI/avif.svelte";
   import { avif, heic, webp } from "@pbk20191/icodec";
   import { writable } from "svelte/store";
+  import WEBPEncWASM from "@pbk20191/icodec/webp-enc.wasm?url";
+
   type ICodecWorker = Comlink.Remote<typeof import("$workers/icodecs")>;
   type FileIterator = AsyncGenerator<
     {
@@ -26,23 +28,51 @@
   let processing = $state(false);
   let store = $state({
     webp: { ...webp.defaultOptions },
+    webpPreset: webp.WebPPreset.Default,
     avif: { ...avif.defaultOptions },
     heic: { ...heic.defaultOptions },
   } as {
     webp: webp.Options;
     avif: avif.Options;
     heic: heic.Options;
+    webpPreset: webp.WebPPreset;
   });
+  let readonlyWebpPreset = $derived(store.webpPreset);
+  let lock_webpPreset = $state(true);
   onMount(() => {
+    webp.loadEncoder(WEBPEncWASM);
     let value = window.localStorage.getItem(store_key);
+    lock_webpPreset = true;
+
     if (value) {
-      store = JSON.parse(value);
+      let t = JSON.parse(value)
+
+      store = t;
+
+      lock_webpPreset = false;
+    } else {
+      lock_webpPreset = false;
     }
   });
   	let _crossOriginIsolated = $state(false)
 	onMount(() => {
 		_crossOriginIsolated = window.crossOriginIsolated
 	})
+    $effect(() => {
+      const preset = readonlyWebpPreset;
+
+      if (untrack(() => lock_webpPreset)) {
+        return;
+      }
+      const prop = untrack(() => $state.snapshot(store.webp));
+      webp.loadEncoder(WEBPEncWASM).then(() => {
+        const webpConfig = webp.preset(prop, preset);
+        untrack(() => {
+          store.webp = webpConfig || webp.defaultOptions;
+        });
+
+      })
+  });
   async function processFiles(iterator: FileIterator) {
     // if (!files.length) return;
     let worker = new Worker(ICODEC, { type: "module" });
@@ -330,7 +360,7 @@
     <details>
       <summary>WEBP</summary>
       <div class="body">
-        <Webp bind:value={store.webp} />
+        <Webp bind:value={store.webp} bind:preset={store.webpPreset} />
       </div>
     </details>
 

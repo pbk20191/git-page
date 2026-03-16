@@ -168,7 +168,12 @@ export async function encodeBitmap(
     return Comlink.transfer(returnValue,list)
 }
 
+export async function WebPPreset(options: webp.Options, preset: webp.WebPPreset) {
+    await webp.loadEncoder(WEBPEncWASM)
+    let data = webp.preset(options, preset)
+    return data
+}
 
 Comlink.expose({
-    bitmapToHEIC, bitmapToAVIF, bitmapToWEBP, encodeBitmap
+    bitmapToHEIC, bitmapToAVIF, bitmapToWEBP, encodeBitmap, WebPPreset
 })

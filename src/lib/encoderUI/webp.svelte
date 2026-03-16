@@ -1,5 +1,9 @@
 <script module lang="ts">
     import { webp, type ImageDataLike } from "@pbk20191/icodec";
+    import { untrack } from "svelte";
+    import * as Comlink from "comlink"
+    import ICODEC from "$workers/icodecs?worker&url";
+    type ICodecWorker = Comlink.Remote<typeof import("$workers/icodecs")>;
 
     export type WebpOption = webp.Options;
 </script>
@@ -10,13 +14,13 @@
 
     // CALLBACK PROPS (Svelte 5 style)
     let {
-        value = $bindable(),
+        value = $bindable(webp.defaultOptions),
+        preset = $bindable(webp.WebPPreset.Default),
         ...props
     }: {
         value: WebpOption;
+        preset: webp.WebPPreset
     } = $props();
-
-
 
     function clamp(
         n: number | undefined | null,
@@ -41,6 +45,14 @@
         .map((value) => {
             return {
                 label: webp.AlphaFiltering[value],
+                v: value,
+            };
+        });
+    const presetEntries = Object.values(webp.WebPPreset)
+        .filter((value) => typeof value === "number")
+        .map((value) => {
+            return {
+                label: webp.WebPPreset[value],
                 v: value,
             };
         });
@@ -243,7 +255,14 @@
             >
             <span class="muted"> (may change transparent pixels)</span>
         </div>
-
+        <div class="row" title="webp Preset">
+            <label for="webp-preset">Preset</label>
+            <select id="webp-preset" bind:value={preset}>
+                {#each presetEntries as p}
+                    <option value={p.v}>{p.label}</option>
+                {/each}
+            </select>
+        </div>
         <div class="row">
             <div style="flex:1" title={tooltip.nearLossless}>
                 <label for="webp-nearLossless" class="small"
