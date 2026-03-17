@@ -42,14 +42,14 @@
   onMount(() => {
     webp.loadEncoder(WEBPEncWASM);
     let value = window.localStorage.getItem(store_key);
-    lock_webpPreset = true;
+    // lock_webpPreset = true;
 
     if (value) {
       let t = JSON.parse(value)
 
       store = t;
 
-      lock_webpPreset = false;
+      lock_webpPreset = true;
     } else {
       lock_webpPreset = false;
     }
@@ -62,8 +62,13 @@
       const preset = readonlyWebpPreset;
 
       if (untrack(() => lock_webpPreset)) {
+        untrack(() => {
+          lock_webpPreset = false;
+        });
+        // console.log("preset locked, skipping webp config update");
         return;
       }
+      // console.log("preset changed, updating webp config", preset, lock_webpPreset);
       const prop = untrack(() => $state.snapshot(store.webp));
       webp.loadEncoder(WEBPEncWASM).then(() => {
         const webpConfig = webp.preset(prop, preset);
