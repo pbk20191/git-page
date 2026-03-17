@@ -35,6 +35,7 @@
 
 
     function resetDefaults() {
+        preset = webp.WebPPreset.Default;
         value = { ...webp.defaultOptions };
     }
 
