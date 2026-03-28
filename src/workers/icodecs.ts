@@ -136,7 +136,7 @@ export async function encodeBitmap(
     )
     const ctx = canvas.getContext("2d")!
     ctx.drawImage(bitmap, 0,0)
-    const imageData = ctx.getImageData(0,0, bitmap.width, bitmap.height, { pixelFormat: "rgba-unorm8"})
+    const imageData = ctx.getImageData(0,0, bitmap.width, bitmap.height)
     const result:ImageDataLike = {
         width: imageData.width,
         height: imageData.height,
