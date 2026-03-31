@@ -84,8 +84,10 @@
     const CONCURRENCY = navigator.hardwareConcurrency - 1 || 4;
     const total_workers = [] as Worker[];
     total_workers.push(worker);
+    const total_interfaces = new Set() as Set<ICodecWorker>;
     const idle_interfaces = [] as ICodecWorker[];
     idle_interfaces.push(Comlink.wrap(worker));
+    total_interfaces.add(idle_interfaces[0]);
     const pending_queue = [] as {
       id: number;
       promise: Promise<{ idx: number; worker: ICodecWorker }>;
@@ -124,8 +126,10 @@
           idle_interfaces.length === 0
         ) {
           worker = new Worker(ICODEC, { type: "module" });
+          const workerInterface = Comlink.wrap(worker) as ICodecWorker;
+          total_interfaces.add(workerInterface);
           total_workers.push(worker);
-          idle_interfaces.push(Comlink.wrap(worker));
+          idle_interfaces.push(workerInterface);
         }
         let workerProxy = idle_interfaces.pop()!;
         const job = Promise.try(async () => {
@@ -202,6 +206,13 @@
       }
       await Promise.allSettled(pending_queue.map((x) => x.promise));
     } finally {
+      console.log(total_interfaces, total_workers)
+      for (const proxy of total_interfaces) {
+        proxy[Comlink.releaseProxy]();
+      }
+      await new Promise((a, b) => {
+        setTimeout(a);
+      })
       for (const worker of total_workers) {
         worker.terminate();
       }
