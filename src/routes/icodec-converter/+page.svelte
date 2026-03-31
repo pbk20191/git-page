@@ -11,6 +11,8 @@
   import { avif, heic, webp } from "@pbk20191/icodec";
   import { writable } from "svelte/store";
   import WEBPEncWASM from "@pbk20191/icodec/webp-enc.wasm?url";
+  import AVIFEncWASM from "@pbk20191/icodec/avif-enc.wasm?url";
+  import HEIFEncWASM from "@pbk20191/icodec/heic-enc.wasm?url";
 
   type ICodecWorker = Comlink.Remote<typeof import("$workers/icodecs")>;
   type FileIterator = AsyncGenerator<
@@ -39,8 +41,42 @@
   });
   let readonlyWebpPreset = $derived(store.webpPreset);
   let lock_webpPreset = $state(true);
+  let modules:Promise<[PromiseSettledResult<WebAssembly.Module>, PromiseSettledResult<WebAssembly.Module>, PromiseSettledResult<WebAssembly.Module>]>
+  let wasmError = $state<string[]>([]);
+
+  const WASM_MODULE_NAMES = ["WebP", "AVIF", "HEIC"];
+
   onMount(() => {
-    webp.loadEncoder(WEBPEncWASM);
+
+    modules = Promise.allSettled(
+      [
+    WebAssembly.compileStreaming(fetch(WEBPEncWASM)),
+    WebAssembly.compileStreaming(fetch(AVIFEncWASM)),
+    WebAssembly.compileStreaming(fetch(HEIFEncWASM)),
+      ]
+    )
+    modules.then((a) => {
+      const failed = a
+        .map((result, i) => result.status === "rejected" ? WASM_MODULE_NAMES[i] : null)
+        .filter((name): name is string => name !== null);
+      if (failed.length > 0) {
+        wasmError = failed;
+      }
+
+      if (a[0].status === "fulfilled") {
+        const module = a[0].value;
+        webp.loadEncoder(undefined, {
+          instantiateWasm: (imports, callback) => {
+            const instance = new WebAssembly.Instance(module, imports);
+            callback(instance);
+            return instance.exports;
+          }
+        });
+      } 
+    })
+
+
+    // webp.loadEncoder(WEBPEncWASM);
     let value = window.localStorage.getItem(store_key);
     // lock_webpPreset = true;
 
@@ -54,10 +90,7 @@
       lock_webpPreset = false;
     }
   });
-  	let _crossOriginIsolated = $state(false)
-	onMount(() => {
-		_crossOriginIsolated = window.crossOriginIsolated
-	})
+
     $effect(() => {
       const preset = readonlyWebpPreset;
 
@@ -80,14 +113,24 @@
   });
   async function processFiles(iterator: FileIterator) {
     // if (!files.length) return;
-    let worker = new Worker(ICODEC, { type: "module" });
     const CONCURRENCY = navigator.hardwareConcurrency - 1 || 4;
     const total_workers = [] as Worker[];
-    total_workers.push(worker);
     const total_interfaces = new Set() as Set<ICodecWorker>;
     const idle_interfaces = [] as ICodecWorker[];
-    idle_interfaces.push(Comlink.wrap(worker));
-    total_interfaces.add(idle_interfaces[0]);
+    const wasmModules = await modules;
+    let token:Promise<void> | null = null;
+    if (true) {    
+      let worker = new Worker(ICODEC, { type: "module" });
+      total_workers.push(worker);
+      const workerInterface = Comlink.wrap(worker) as ICodecWorker;
+      idle_interfaces.push(workerInterface);
+      total_interfaces.add(workerInterface);
+       token  =  workerInterface.loadExternalWASM(
+        (wasmModules[0] as PromiseFulfilledResult<WebAssembly.Module>).value,
+        (wasmModules[1] as PromiseFulfilledResult<WebAssembly.Module>).value,
+        (wasmModules[2] as PromiseFulfilledResult<WebAssembly.Module>).value,
+      )
+    }
     const pending_queue = [] as {
       id: number;
       promise: Promise<{ idx: number; worker: ICodecWorker }>;
@@ -104,9 +147,12 @@
       fileName: string;
     }[];
     let jobs = 0;
-
     try {
       for await (const item of iterator) {
+        if (token) {
+          await token;
+          token = null;
+        }
         jobs += 1;
         const job_id = jobs;
         if (pending_queue.length >= CONCURRENCY) {
@@ -125,12 +171,18 @@
           pending_queue.length < CONCURRENCY &&
           idle_interfaces.length === 0
         ) {
-          worker = new Worker(ICODEC, { type: "module" });
+          let worker = new Worker(ICODEC, { type: "module" });
           const workerInterface = Comlink.wrap(worker) as ICodecWorker;
+          await workerInterface.loadExternalWASM(
+            (wasmModules[0] as PromiseFulfilledResult<WebAssembly.Module>).value,
+            (wasmModules[1] as PromiseFulfilledResult<WebAssembly.Module>).value,
+            (wasmModules[2] as PromiseFulfilledResult<WebAssembly.Module>).value,
+          )
           total_interfaces.add(workerInterface);
           total_workers.push(worker);
           idle_interfaces.push(workerInterface);
         }
+
         let workerProxy = idle_interfaces.pop()!;
         const job = Promise.try(async () => {
           let file = item.file;
@@ -149,7 +201,7 @@
               folderPath = "";
             }
             const fileBaseName = components[components.length - 1];
-            console.log({ fileBaseName, folderPath, outputName, components });
+            // console.log({ fileBaseName, folderPath, outputName, components });
             if (result.avif.status === "fulfilled") {
               zip.file(
                 `${folderPath}avif/${fileBaseName}.avif`,
@@ -206,7 +258,7 @@
       }
       await Promise.allSettled(pending_queue.map((x) => x.promise));
     } finally {
-      console.log(total_interfaces, total_workers)
+      // console.log(total_interfaces, total_workers)
       for (const proxy of total_interfaces) {
         proxy[Comlink.releaseProxy]();
       }
@@ -338,7 +390,9 @@
 <div class="container">
   <!-- 경고 -->
   <div class="section">
-    {#if processing}
+    {#if wasmError.length > 0}
+      ❌ WebAssembly module compile failed: {wasmError.join(", ")}. File processing is unavailable.
+    {:else if processing}
       Processing
     {:else}
       ⚠️ This is pretty slow
