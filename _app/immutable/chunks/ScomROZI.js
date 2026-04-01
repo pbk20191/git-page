@@ -1,0 +1,1 @@
+import{Q as e}from"./KaumNKgl.js";e();
